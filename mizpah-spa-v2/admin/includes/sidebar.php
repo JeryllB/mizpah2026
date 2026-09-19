@@ -118,6 +118,7 @@
         <div class="menu-title">Management</div>
 
         <a href="services.php">Services</a>
+        <a href="landingpage.php">Landing Page</a>
         <a href="therapists.php">Therapists</a>
         <a href="users.php">Users</a>
         <a href="settings.php">Settings</a>
