@@ -1,5 +1,7 @@
 <?php
+
 session_start();
+
 include 'includes/db.php';
 
 $error = "";
@@ -8,6 +10,7 @@ $success = "";
 /* =========================
    REGISTER CUSTOMER
 ========================= */
+
 if(isset($_POST['register'])){
 
     $name = mysqli_real_escape_string($conn, $_POST['name']);
@@ -27,13 +30,22 @@ if(isset($_POST['register'])){
             VALUES('$name','$email','$password','customer')
         ");
 
-        $success = "Account created! You can now login.";
+        $new_user_id = mysqli_insert_id($conn);
+
+        $_SESSION['user_id'] = $new_user_id;
+        $_SESSION['name'] = $name;
+        $_SESSION['role'] = 'customer';
+
+        header("Location: customer/wellness-profile.php");
+        exit();
+
     }
 }
 
 /* =========================
    LOGIN
 ========================= */
+
 if(isset($_POST['login'])){
 
     $email = mysqli_real_escape_string($conn,$_POST['email']);
@@ -53,12 +65,16 @@ if(isset($_POST['login'])){
 
         // bcrypt check (new accounts)
         if(password_verify($password, $user['password'])){
+
             $login_success = true;
+
         }
 
         // MD5 check (old admin account)
         else if(md5($password) === $user['password']){
+
             $login_success = true;
+
         }
 
         if($login_success){
@@ -68,27 +84,40 @@ if(isset($_POST['login'])){
             $_SESSION['role']    = $user['role'];
 
             if($user['role'] == 'admin'){
+
                 header("Location: admin/dashboard.php");
+
             }else{
+
                 header("Location: customer/dashboard.php");
+
             }
 
             exit();
 
         }else{
+
             $error = "Invalid email or password.";
+
         }
 
     }else{
+
         $error = "Invalid email or password.";
+
     }
 }
+
 ?>
 
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Mizpah Login</title>
@@ -96,6 +125,7 @@ if(isset($_POST['login'])){
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 
 <style>
+
 *{
     margin:0;
     padding:0;
@@ -212,50 +242,104 @@ button:hover{
     font-size:11px;
     color:#666;
 }
+
 </style>
+
 </head>
 
 <body>
 
 <div class="login-wrapper">
+
 <div class="login-card">
 
     <img src="assets/images/logo.png" class="login-logo">
 
     <h2>Mizpah Wellness Spa</h2>
+
     <div class="sub">Luxury Healing • Calm Experience</div>
 
     <?php if($error!=""){ ?>
-        <div class="error"><?= $error ?></div>
+
+        <div class="error"><?= htmlspecialchars($error) ?></div>
+
     <?php } ?>
 
     <?php if($success!=""){ ?>
-        <div class="success"><?= $success ?></div>
+
+        <div class="success"><?= htmlspecialchars($success) ?></div>
+
     <?php } ?>
 
+    <!-- LOGIN FORM -->
+
     <form method="POST" id="loginForm">
-        <input type="email" name="email" placeholder="Email Address" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit" name="login">Login</button>
+
+        <input 
+            type="email" 
+            name="email" 
+            placeholder="Email Address" 
+            required
+        >
+
+        <input 
+            type="password" 
+            name="password" 
+            placeholder="Password" 
+            required
+        >
+
+        <button type="submit" name="login">
+            Login
+        </button>
+
     </form>
 
+    <!-- REGISTER FORM -->
+
     <form method="POST" id="registerForm" style="display:none;">
-        <input type="text" name="name" placeholder="Full Name" required>
-        <input type="email" name="email" placeholder="Email Address" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit" name="register">Create Account</button>
+
+        <input 
+            type="text" 
+            name="name" 
+            placeholder="Full Name" 
+            required
+        >
+
+        <input 
+            type="email" 
+            name="email" 
+            placeholder="Email Address" 
+            required
+        >
+
+        <input 
+            type="password" 
+            name="password" 
+            placeholder="Password" 
+            required
+        >
+
+        <button type="submit" name="register">
+            Create Account
+        </button>
+
     </form>
 
     <div class="toggle" onclick="toggleForm()" id="toggleText">
         Create account
     </div>
 
-    <div class="footer-text">© 2026 Mizpah Spa</div>
+    <div class="footer-text">
+        © 2026 Mizpah Spa
+    </div>
 
 </div>
+
 </div>
 
 <script>
+
 function toggleForm(){
 
     let login = document.getElementById("loginForm");
@@ -273,9 +357,13 @@ function toggleForm(){
         login.style.display = "none";
         register.style.display = "block";
         text.innerHTML = "Already have account?";
+
     }
+
 }
+
 </script>
 
 </body>
+
 </html>
