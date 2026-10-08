@@ -5,13 +5,22 @@ session_start();
 include 'includes/db.php';
 
 
+/* =========================================================
+   LANDING PAGE SERVICES
+   ========================================================= */
+
 $landingData = [
+
     'signature' => [],
+
     'package' => [],
+
     'popular' => []
+
 ];
 
 $landingQ = mysqli_query($conn, "
+
     SELECT 
         lps.id AS landing_id,
         lps.service_id,
@@ -25,147 +34,270 @@ $landingQ = mysqli_query($conn, "
             FROM service_durations sd
             WHERE sd.service_id = s.id
         ) AS price
+
     FROM landing_page_services lps
+
     INNER JOIN services s ON s.id = lps.service_id
+
     WHERE lps.section IN ('signature', 'package', 'popular')
+
     AND lps.status = 'shown'
+
     ORDER BY lps.section, lps.sort_order ASC, lps.id ASC
+
 ");
 
+
 if ($landingQ) {
+
     while ($row = mysqli_fetch_assoc($landingQ)) {
+
         $landingData[$row['section']][] = $row;
+
     }
+
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| EXISTING SIGNATURE SERVICE DETAILS
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   SIGNATURE SERVICE DETAILS
+   ========================================================= */
 
 $signatureDetails = [
 
     'Swedish Massage' => [
-        'description' => 'Relaxing full body massage using light to medium pressure.',
-        'best_for' => 'Stress relief, body pain, relaxation',
-        'duration' => '1–2 hrs',
-        'price' => '₱600'
+
+        'description' =>
+            'Relaxing full body massage using light to medium pressure.',
+
+        'best_for' =>
+            'Stress relief, body pain, relaxation',
+
+        'duration' =>
+            '1–2 hrs',
+
+        'price' =>
+            '₱600'
+
     ],
 
     'MIZPAH Signature' => [
-        'description' => 'Combination of Swedish, Shiatsu & deep tissue massage.',
-        'best_for' => 'Full body recovery and premium relaxation',
-        'duration' => '1–2 hrs',
-        'price' => '₱750'
+
+        'description' =>
+            'Combination of Swedish, Shiatsu & deep tissue massage.',
+
+        'best_for' =>
+            'Full body recovery and premium relaxation',
+
+        'duration' =>
+            '1–2 hrs',
+
+        'price' =>
+            '₱750'
+
     ],
 
     'Mizpah Signature' => [
-        'description' => 'Combination of Swedish, Shiatsu & deep tissue massage.',
-        'best_for' => 'Full body recovery and premium relaxation',
-        'duration' => '1–2 hrs',
-        'price' => '₱750'
+
+        'description' =>
+            'Combination of Swedish, Shiatsu & deep tissue massage.',
+
+        'best_for' =>
+            'Full body recovery and premium relaxation',
+
+        'duration' =>
+            '1–2 hrs',
+
+        'price' =>
+            '₱750'
+
     ],
 
     'Lymphatic Massage' => [
-        'description' => 'Detox massage that improves circulation & reduces swelling.',
-        'best_for' => 'Wellness recovery',
-        'duration' => '1–2 hrs',
-        'price' => '₱850'
+
+        'description' =>
+            'Detox massage that improves circulation & reduces swelling.',
+
+        'best_for' =>
+            'Wellness recovery',
+
+        'duration' =>
+            '1–2 hrs',
+
+        'price' =>
+            '₱850'
+
     ]
 
 ];
 
 
-/*
-|--------------------------------------------------------------------------
-| EXISTING PACKAGE DETAILS
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   PACKAGE DETAILS
+   ========================================================= */
 
 $packageDetails = [
 
     'Bronze Package' => [
+
         'items' => [
+
             'Swedish Massage',
+
             'Body Scrub',
+
             'Hot Stone',
+
             'Milk Mask',
+
             'Korean Face Mask',
+
             'Foot Mask'
+
         ],
-        'duration' => '1 hr 45 mins',
-        'price' => '₱1,600',
-        'class' => 'bronze'
+
+        'duration' =>
+            '1 hr 45 mins',
+
+        'price' =>
+            '₱1,600',
+
+        'class' =>
+            'bronze'
+
     ],
 
     'Silver Package' => [
+
         'items' => [
+
             'MIZPAH Signature Massage',
+
             'Body Scrub',
+
             'Hot Stone',
+
             'Milk Mask',
+
             'Korean Face Mask',
+
             'Foot Mask'
+
         ],
-        'duration' => '1 hr 45 mins',
-        'price' => '₱1,800',
-        'class' => 'silver'
+
+        'duration' =>
+            '1 hr 45 mins',
+
+        'price' =>
+            '₱1,800',
+
+        'class' =>
+            'silver'
+
     ],
 
     'Gold Package' => [
+
         'items' => [
+
             'MIZPAH Signature Massage',
+
             'Body Scrub',
+
             'Hot Stone',
+
             'Head or Foot Massage',
+
             'Milk Mask',
+
             'Korean Face Mask',
+
             'Foot Mask'
+
         ],
-        'duration' => '2 hrs',
-        'price' => '₱2,000',
-        'class' => 'gold'
+
+        'duration' =>
+            '2 hrs',
+
+        'price' =>
+            '₱2,000',
+
+        'class' =>
+            'gold'
+
     ]
 
 ];
 
 
-/*
-|--------------------------------------------------------------------------
-| EXISTING POPULAR DETAILS
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   POPULAR DETAILS
+   ========================================================= */
 
 $popularDetails = [
 
     'Mizpah Signature' => [
-        'tag' => 'Signature',
-        'image' => 'assets/images/popular/signature.jpg',
-        'description' => 'Our exclusive blend for ultimate relaxation',
-        'price' => '₱750'
+
+        'tag' =>
+            'Signature',
+
+        'image' =>
+            'assets/images/popular/signature.jpg',
+
+        'description' =>
+            'Our exclusive blend for ultimate relaxation',
+
+        'price' =>
+            '₱750'
+
     ],
 
     'MIZPAH Signature' => [
-        'tag' => 'Signature',
-        'image' => 'assets/images/popular/signature.jpg',
-        'description' => 'Our exclusive blend for ultimate relaxation',
-        'price' => '₱750'
+
+        'tag' =>
+            'Signature',
+
+        'image' =>
+            'assets/images/popular/signature.jpg',
+
+        'description' =>
+            'Our exclusive blend for ultimate relaxation',
+
+        'price' =>
+            '₱750'
+
     ],
 
     'Hot Stone Combo' => [
-        'tag' => 'Popular',
-        'image' => 'assets/images/popular/hotstone.jpg',
-        'description' => 'Melt away tension with heated basalt stones',
-        'price' => '₱1,000'
+
+        'tag' =>
+            'Popular',
+
+        'image' =>
+            'assets/images/popular/hotstone.jpg',
+
+        'description' =>
+            'Melt away tension with heated basalt stones',
+
+        'price' =>
+            '₱1,000'
+
     ],
 
     'Quick Escape' => [
-        'tag' => 'Add-On',
-        'image' => 'assets/images/popular/quick.jpg',
-        'description' => '30-min relief for busy schedules',
-        'price' => '₱350'
+
+        'tag' =>
+            'Add-On',
+
+        'image' =>
+            'assets/images/popular/quick.jpg',
+
+        'description' =>
+            '30-min relief for busy schedules',
+
+        'price' =>
+            '₱350'
+
     ]
 
 ];
@@ -173,107 +305,250 @@ $popularDetails = [
 ?>
 
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
 
 <meta charset="UTF-8">
 
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
 <title>Mizpah Wellness Spa</title>
 
 <link
-href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap"
-rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
 >
 
-<link rel="stylesheet" href="assets/css/style.css">
+<link
+    rel="stylesheet"
+    href="assets/css/style.css"
+>
 
 <style>
+
+
+/* =========================================================
+   HERO BOOKING IMPROVEMENT
+   ========================================================= */
+
+.hero-booking-actions{
+
+    display:flex;
+
+    flex-direction:column;
+
+    align-items:center;
+
+    justify-content:center;
+
+    gap:12px;
+
+    margin-top:25px;
+
+}
+
+.hero-book-btn{
+
+    min-width:190px;
+
+    text-align:center;
+
+    padding:13px 28px;
+
+    box-shadow:
+        0 10px 30px
+        rgba(214,194,156,.15);
+
+}
+
+.account-prompt{
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    flex-wrap:wrap;
+
+    gap:6px;
+
+    color:#aaa;
+
+    font-size:11px;
+
+}
+
+.account-prompt a{
+
+    color:#D6C29C;
+
+    text-decoration:none;
+
+    font-weight:600;
+
+    transition:.2s;
+
+}
+
+.account-prompt a:hover{
+
+    color:#fff;
+
+    text-decoration:underline;
+
+}
+
 
 /* =========================================================
    POPUP MODAL
    ========================================================= */
 
 .modal{
+
     display:none;
+
     position:fixed;
+
     inset:0;
-    background:rgba(0,0,0,.75);
+
+    background:
+        rgba(0,0,0,.75);
+
     justify-content:center;
+
     align-items:center;
+
     z-index:9999;
+
     padding:20px;
+
 }
 
 .modal-box{
+
     width:470px;
+
     max-width:100%;
+
     background:#161616;
-    border:1px solid rgba(255,255,255,.08);
+
+    border:
+        1px solid
+        rgba(255,255,255,.08);
+
     border-radius:18px;
+
     padding:25px;
+
     color:#fff;
+
     position:relative;
-    animation:pop .25s ease;
+
+    animation:
+        pop .25s ease;
+
     max-height:90vh;
+
     overflow:auto;
+
 }
 
 @keyframes pop{
 
     from{
-        transform:scale(.9);
+
+        transform:
+            scale(.9);
+
         opacity:0;
+
     }
 
     to{
-        transform:scale(1);
+
+        transform:
+            scale(1);
+
         opacity:1;
+
     }
 
 }
 
 .close{
+
     position:absolute;
+
     top:12px;
+
     right:16px;
+
     font-size:28px;
+
     cursor:pointer;
+
     color:#D6C29C;
+
 }
 
 .modal-box h2{
+
     margin-bottom:10px;
+
     color:#D6C29C;
+
 }
 
 .modal-box p{
+
     margin-bottom:10px;
+
     line-height:1.6;
+
     color:#ddd;
+
 }
 
 .modal-box ul{
+
     padding-left:18px;
+
     margin:10px 0;
+
 }
 
 .modal-box li{
+
     margin-bottom:8px;
+
     color:#ddd;
+
 }
 
 .popup-book{
+
     display:inline-block;
+
     margin-top:15px;
+
     padding:10px 18px;
+
     background:#D6C29C;
+
     color:#111;
+
     border-radius:10px;
+
     font-weight:600;
+
     text-decoration:none;
+
 }
 
 
@@ -284,59 +559,89 @@ rel="stylesheet"
 .service-card,
 .package-card,
 .popular-card{
+
     cursor:pointer;
+
     transition:.25s;
+
 }
 
 .service-card:hover,
 .package-card:hover,
 .popular-card:hover{
-    transform:translateY(-6px);
-    box-shadow:0 10px 30px rgba(214,194,156,.15);
+
+    transform:
+        translateY(-6px);
+
+    box-shadow:
+        0 10px 30px
+        rgba(214,194,156,.15);
+
 }
 
 
 /* =========================================================
-   POPULAR CHOICES ALIGNMENT
+   POPULAR CHOICES
    ========================================================= */
 
 .popular-grid{
+
     align-items:stretch;
+
 }
 
 .popular-card{
+
     display:flex;
+
     flex-direction:column;
+
     height:100%;
+
 }
 
 .popular-card img{
+
     width:100%;
+
     height:220px;
+
     object-fit:cover;
+
     display:block;
+
     border-radius:12px;
+
 }
 
 .popular-card h3{
+
     margin-top:15px;
+
     min-height:30px;
+
 }
 
 .popular-card p{
+
     min-height:48px;
+
 }
 
 .popular-card strong{
+
     display:block;
+
     margin-top:auto;
+
     margin-bottom:12px;
+
 }
 
-/* CENTER BOOK NOW */
-
 .popular-card .btn-small{
+
     align-self:center;
+
 }
 
 
@@ -345,103 +650,196 @@ rel="stylesheet"
    ========================================================= */
 
 .footer{
+
     background:#0d0d0d;
-    border-top:1px solid rgba(214,194,156,.18);
-    padding:60px 8% 20px;
+
+    border-top:
+        1px solid
+        rgba(214,194,156,.18);
+
+    padding:
+        60px 8%
+        20px;
+
     margin-top:60px;
+
 }
 
 .footer-grid{
+
     max-width:1200px;
+
     margin:auto;
+
     display:grid;
-    grid-template-columns:2fr 1fr 1.3fr;
+
+    grid-template-columns:
+        2fr 1fr 1.3fr;
+
     gap:70px;
+
     padding-bottom:45px;
+
 }
 
 .footer h3{
+
     color:#D6C29C;
-    font-family:'Playfair Display',serif;
+
+    font-family:
+        'Playfair Display',
+        serif;
+
     font-size:25px;
-    margin:0 0 12px;
+
+    margin:
+        0 0 12px;
+
 }
 
 .footer h4{
+
     color:#D6C29C;
+
     font-size:16px;
-    margin:0 0 18px;
+
+    margin:
+        0 0 18px;
+
     text-transform:uppercase;
+
     letter-spacing:1px;
+
 }
 
 .footer p{
+
     color:#aaa;
+
     line-height:1.7;
+
     margin:7px 0;
+
 }
 
 .footer-brand p{
+
     max-width:420px;
+
 }
 
 .footer-text{
-    margin-top:15px !important;
+
+    margin-top:
+        15px !important;
+
 }
 
 .footer-links{
+
     display:flex;
+
     flex-direction:column;
+
     align-items:flex-start;
+
 }
 
 .footer-links a{
+
     color:#aaa;
+
     text-decoration:none;
+
     margin-bottom:10px;
+
     transition:.2s;
+
 }
 
 .footer-links a:hover{
+
     color:#D6C29C;
+
 }
 
 .footer-contact p{
+
     margin-bottom:12px;
+
 }
 
 .footer-bottom{
+
     max-width:1200px;
+
     margin:auto;
+
     padding-top:20px;
-    border-top:1px solid rgba(255,255,255,.08);
+
+    border-top:
+        1px solid
+        rgba(255,255,255,.08);
+
     text-align:center;
+
 }
 
 .footer-bottom p{
+
     margin:0;
+
     font-size:13px;
+
     color:#777;
+
 }
 
 
 /* =========================================================
-   MOBILE FOOTER
+   RESPONSIVE
    ========================================================= */
 
 @media(max-width:768px){
 
+    .hero-booking-actions{
+
+        width:100%;
+
+    }
+
+    .hero-book-btn{
+
+        min-width:180px;
+
+    }
+
+    .account-prompt{
+
+        font-size:10px;
+
+    }
+
     .footer{
-        padding:45px 25px 20px;
+
+        padding:
+            45px 25px
+            20px;
+
     }
 
     .footer-grid{
+
         grid-template-columns:1fr;
+
         gap:35px;
+
     }
 
     .footer-brand p{
+
         max-width:100%;
+
     }
 
 }
@@ -461,31 +859,48 @@ rel="stylesheet"
 <header class="site-header">
 
     <div class="logo">
+
         Mizpah Wellness Spa
+
     </div>
+
 
     <nav>
 
         <a href="index.php">
+
             Home
+
         </a>
 
         <a href="services.php">
+
             Services
+
         </a>
 
         <a href="therapist.php">
+
             Therapists
+
         </a>
 
         <a href="#">
+
             Virtual Tour
+
         </a>
 
     </nav>
 
-    <a href="login.php" class="btn-primary">
+
+    <a
+        href="login.php"
+        class="btn-primary"
+    >
+
         Login
+
     </a>
 
 </header>
@@ -499,18 +914,27 @@ rel="stylesheet"
 
     <div class="hero-content">
 
+
         <img
-        src="assets/images/logo.png"
-        class="hero-logo"
+            src="assets/images/logo.png"
+            class="hero-logo"
+            alt="Mizpah Wellness Spa"
         >
 
+
         <h1 class="hero-title-white">
+
             Exquisite Comfort
+
         </h1>
 
+
         <h2 class="hero-title-gold">
+
             Exceptional Care
+
         </h2>
+
 
         <p class="hero-text">
 
@@ -519,28 +943,60 @@ rel="stylesheet"
 
         </p>
 
-        <a
-        href="booking-guest.php"
-        class="btn-primary"
-        >
-            Book Now
-        </a>
+
+        <div class="hero-booking-actions">
+
+            <a
+                href="booking-guest.php"
+                class="btn-primary hero-book-btn"
+            >
+
+                Book as Guest
+
+            </a>
+
+
+            <div class="account-prompt">
+
+                <span>
+
+                    Want your own account?
+
+                </span>
+
+                <a href="login.php">
+
+                    Login or Create Account
+
+                </a>
+
+            </div>
+
+        </div>
+
 
         <div class="hero-info">
 
             <div class="info-box">
+
                 ☎ 0936-995-0038
+
             </div>
 
             <div class="info-box">
+
                 🕒 Mon–Fri 3PM–3AM · Sat–Sun 1PM–3AM
+
             </div>
 
             <div class="info-box">
+
                 📍 Kawit, Cavite
+
             </div>
 
         </div>
+
 
     </div>
 
@@ -554,51 +1010,102 @@ rel="stylesheet"
 <section class="section">
 
     <h2>
+
         Mizpah Signature Services
+
     </h2>
+
 
     <div class="service-grid">
 
+
         <?php if (!empty($landingData['signature'])): ?>
+
 
             <?php foreach ($landingData['signature'] as $service): ?>
 
+
                 <?php
 
-                $name = $service['service_name'];
+                $name =
+                    $service['service_name'];
 
-                if (isset($signatureDetails[$name])) {
 
-                    $detail = $signatureDetails[$name];
+                if (
+                    isset(
+                        $signatureDetails[$name]
+                    )
+                ) {
 
-                    $description = $detail['description'];
-                    $bestFor = $detail['best_for'];
-                    $duration = $detail['duration'];
-                    $price = $detail['price'];
+                    $detail =
+                        $signatureDetails[$name];
+
+
+                    $description =
+                        $detail['description'];
+
+                    $bestFor =
+                        $detail['best_for'];
+
+                    $duration =
+                        $detail['duration'];
+
+                    $price =
+                        $detail['price'];
 
                 } else {
 
-                    $description = !empty($service['description'])
-                        ? $service['description']
-                        : 'A relaxing wellness service from Mizpah Wellness Spa.';
+                    $description =
+                        !empty(
+                            $service['description']
+                        )
+                        ?
+                        $service['description']
+                        :
+                        'A relaxing wellness service from Mizpah Wellness Spa.';
 
-                    $bestFor = 'Relaxation and wellness';
 
-                    $duration = 'Based on selected service';
+                    $bestFor =
+                        'Relaxation and wellness';
 
-                    $price = !empty($service['price'])
-                        ? '₱' . number_format($service['price'], 2)
-                        : 'Contact us';
+
+                    $duration =
+                        'Based on selected service';
+
+
+                    $price =
+                        !empty(
+                            $service['price']
+                        )
+                        ?
+                        '₱' .
+                        number_format(
+                            $service['price'],
+                            2
+                        )
+                        :
+                        'Contact us';
 
                 }
 
+
                 $isSignature = (
 
-                    strtolower($name) === 'mizpah signature'
-                    || strtolower($name) === 'mispah signature'
-                    || strtolower($name) === 'mzpah signature'
+                    strtolower($name) ===
+                    'mizpah signature'
+
+                    ||
+
+                    strtolower($name) ===
+                    'mispah signature'
+
+                    ||
+
+                    strtolower($name) ===
+                    'mzpah signature'
 
                 );
+
 
                 $modalType =
                     'service_' .
@@ -606,54 +1113,76 @@ rel="stylesheet"
 
                 ?>
 
+
                 <div
-                class="service-card <?= $isSignature ? 'featured' : '' ?>"
-                onclick="openModal('<?= $modalType ?>')"
+                    class="service-card <?= $isSignature ? 'featured' : '' ?>"
+                    onclick="openModal('<?= $modalType ?>')"
                 >
+
 
                     <?php if ($isSignature): ?>
 
                         <div class="badge">
+
                             Recommended
+
                         </div>
 
                     <?php endif; ?>
 
+
                     <h3>
+
                         <?= htmlspecialchars($name) ?>
+
                     </h3>
 
+
                     <p class="desc">
+
                         <?= htmlspecialchars($description) ?>
+
                     </p>
+
 
                     <p class="time">
+
                         <?= htmlspecialchars($duration) ?>
+
                     </p>
+
 
                     <p class="price">
+
                         <?= htmlspecialchars($price) ?>
+
                     </p>
 
-                    <a
-                    href="booking-guest.php"
-                    class="btn-small"
-                    onclick="event.stopPropagation();"
-                    >
-                        Book Now
-                    </a>
+
+                    <!--
+                        BOOK NOW REMOVED HERE ONLY.
+                        CLICKING THE CARD OPENS THE MODAL.
+                    -->
+
 
                 </div>
 
+
             <?php endforeach; ?>
+
 
         <?php else: ?>
 
+
             <p style="color:#aaa;">
+
                 No signature services selected yet.
+
             </p>
 
+
         <?php endif; ?>
+
 
     </div>
 
@@ -667,55 +1196,97 @@ rel="stylesheet"
 <section class="section">
 
     <h2>
+
         Mizpah Packages
+
     </h2>
+
 
     <div class="package-grid">
 
+
         <?php if (!empty($landingData['package'])): ?>
+
 
             <?php foreach ($landingData['package'] as $package): ?>
 
+
                 <?php
 
-                $name = $package['service_name'];
+                $name =
+                    $package['service_name'];
 
-                if (isset($packageDetails[$name])) {
 
-                    $detail = $packageDetails[$name];
+                if (
+                    isset(
+                        $packageDetails[$name]
+                    )
+                ) {
 
-                    $items = $detail['items'];
-                    $duration = $detail['duration'];
-                    $price = $detail['price'];
-                    $packageClass = $detail['class'];
+                    $detail =
+                        $packageDetails[$name];
+
+
+                    $items =
+                        $detail['items'];
+
+                    $duration =
+                        $detail['duration'];
+
+                    $price =
+                        $detail['price'];
+
+                    $packageClass =
+                        $detail['class'];
 
                 } else {
 
                     $items = [];
 
-                    if (!empty($package['description'])) {
 
-                        $items = array_filter(
-                            array_map(
-                                'trim',
-                                preg_split(
-                                    '/[,;\n]+/',
-                                    $package['description']
+                    if (
+                        !empty(
+                            $package['description']
+                        )
+                    ) {
+
+                        $items =
+                            array_filter(
+                                array_map(
+                                    'trim',
+                                    preg_split(
+                                        '/[,;\n]+/',
+                                        $package['description']
+                                    )
                                 )
-                            )
-                        );
+                            );
 
                     }
 
-                    $duration = 'Based on selected package';
 
-                    $price = !empty($package['price'])
-                        ? '₱' . number_format($package['price'], 2)
-                        : 'Contact us';
+                    $duration =
+                        'Based on selected package';
 
-                    $packageClass = 'bronze';
+
+                    $price =
+                        !empty(
+                            $package['price']
+                        )
+                        ?
+                        '₱' .
+                        number_format(
+                            $package['price'],
+                            2
+                        )
+                        :
+                        'Contact us';
+
+
+                    $packageClass =
+                        'bronze';
 
                 }
+
 
                 $modalType =
                     'package_' .
@@ -723,58 +1294,88 @@ rel="stylesheet"
 
                 ?>
 
+
                 <div
-                class="package-card <?= htmlspecialchars($packageClass) ?>"
-                onclick="openModal('<?= $modalType ?>')"
+                    class="package-card <?= htmlspecialchars($packageClass) ?>"
+                    onclick="openModal('<?= $modalType ?>')"
                 >
 
+
                     <h3>
+
                         <?= htmlspecialchars($name) ?>
+
                     </h3>
+
 
                     <ul class="package-list">
 
+
                         <?php if (!empty($items)): ?>
+
 
                             <?php foreach ($items as $item): ?>
 
+
                                 <li>
+
                                     <?= htmlspecialchars($item) ?>
+
                                 </li>
+
 
                             <?php endforeach; ?>
 
+
                         <?php else: ?>
+
 
                             <li>
 
                                 <?= htmlspecialchars(
-                                    !empty($package['description'])
-                                        ? $package['description']
-                                        : 'Package details available upon booking.'
+                                    !empty(
+                                        $package['description']
+                                    )
+                                    ?
+                                    $package['description']
+                                    :
+                                    'Package details available upon booking.'
                                 ) ?>
 
                             </li>
 
+
                         <?php endif; ?>
+
 
                     </ul>
 
+
                     <strong>
+
                         <?= htmlspecialchars($price) ?>
+
                     </strong>
+
 
                 </div>
 
+
             <?php endforeach; ?>
+
 
         <?php else: ?>
 
+
             <p style="color:#aaa;">
+
                 No packages selected yet.
+
             </p>
 
+
         <?php endif; ?>
+
 
     </div>
 
@@ -788,66 +1389,107 @@ rel="stylesheet"
 <section class="section">
 
     <h2>
+
         Popular Choices
+
     </h2>
 
+
     <p class="subtitle">
+
         Our Guests' Favourites
+
     </p>
+
 
     <div class="popular-grid">
 
+
         <?php if (!empty($landingData['popular'])): ?>
+
 
             <?php foreach ($landingData['popular'] as $popular): ?>
 
+
                 <?php
 
-                $name = $popular['service_name'];
+                $name =
+                    $popular['service_name'];
 
-                if (isset($popularDetails[$name])) {
 
-                    $detail = $popularDetails[$name];
+                if (
+                    isset(
+                        $popularDetails[$name]
+                    )
+                ) {
 
-                    $tag = $detail['tag'];
-                    $image = $detail['image'];
-                    $description = $detail['description'];
-                    $price = $detail['price'];
+                    $detail =
+                        $popularDetails[$name];
+
+
+                    $tag =
+                        $detail['tag'];
+
+                    $image =
+                        $detail['image'];
+
+                    $description =
+                        $detail['description'];
+
+                    $price =
+                        $detail['price'];
 
                 } else {
 
-                    $tag = 'Popular';
+                    $tag =
+                        'Popular';
+
 
                     if (
-                        stripos($name, 'Hot Stone') !== false
+                        stripos(
+                            $name,
+                            'Hot Stone'
+                        ) !== false
                     ) {
 
                         $image =
                             'assets/images/popular/hotstone.jpg';
 
                     } elseif (
-                        stripos($name, 'Quick Escape') !== false
+                        stripos(
+                            $name,
+                            'Quick Escape'
+                        ) !== false
                     ) {
 
                         $image =
                             'assets/images/popular/quick.jpg';
 
                     } elseif (
-                        stripos($name, 'Mizpah Signature') !== false
+                        stripos(
+                            $name,
+                            'Mizpah Signature'
+                        ) !== false
                     ) {
 
                         $image =
                             'assets/images/popular/signature.jpg';
 
                     } elseif (
-                        stripos($name, 'Swedish Massage') !== false
+                        stripos(
+                            $name,
+                            'Swedish Massage'
+                        ) !== false
                     ) {
 
                         $image =
                             'assets/images/popular/signature.jpg';
 
                     } elseif (
-                        stripos($name, 'Lymphatic Massage') !== false
+                        stripos(
+                            $name,
+                            'Lymphatic Massage'
+                        ) !== false
                     ) {
 
                         $image =
@@ -860,20 +1502,32 @@ rel="stylesheet"
 
                     }
 
+
                     $description =
-                        !empty($popular['description'])
-                            ? $popular['description']
-                            : 'A popular choice from Mizpah Wellness Spa.';
+                        !empty(
+                            $popular['description']
+                        )
+                        ?
+                        $popular['description']
+                        :
+                        'A popular choice from Mizpah Wellness Spa.';
+
 
                     $price =
-                        !empty($popular['price'])
-                            ? '₱' . number_format(
-                                $popular['price'],
-                                2
-                            )
-                            : 'Contact us';
+                        !empty(
+                            $popular['price']
+                        )
+                        ?
+                        '₱' .
+                        number_format(
+                            $popular['price'],
+                            2
+                        )
+                        :
+                        'Contact us';
 
                 }
+
 
                 $modalType =
                     'popular_' .
@@ -881,51 +1535,76 @@ rel="stylesheet"
 
                 ?>
 
+
                 <div
-                class="popular-card"
-                onclick="openModal('<?= $modalType ?>')"
+                    class="popular-card"
+                    onclick="openModal('<?= $modalType ?>')"
                 >
 
+
                     <span class="tag">
+
                         <?= htmlspecialchars($tag) ?>
+
                     </span>
 
+
                     <img
-                    src="<?= htmlspecialchars($image) ?>"
-                    alt="<?= htmlspecialchars($name) ?>"
+                        src="<?= htmlspecialchars($image) ?>"
+                        alt="<?= htmlspecialchars($name) ?>"
                     >
+
 
                     <h3>
+
                         <?= htmlspecialchars($name) ?>
+
                     </h3>
 
+
                     <p>
+
                         <?= htmlspecialchars($description) ?>
+
                     </p>
 
+
                     <strong>
+
                         <?= htmlspecialchars($price) ?>
+
                     </strong>
 
+
                     <a
-                    href="booking-guest.php"
-                    class="btn-small"
-                    onclick="event.stopPropagation();"
+                        href="booking-guest.php"
+                        class="btn-small"
+                        onclick="event.stopPropagation();"
                     >
+
                         Book Now
+
                     </a>
+
 
                 </div>
 
+
             <?php endforeach; ?>
+
 
         <?php else: ?>
 
+
             <p style="color:#aaa;">
+
                 No popular choices selected yet.
+
             </p>
 
+
         <?php endif; ?>
+
 
     </div>
 
@@ -938,115 +1617,199 @@ rel="stylesheet"
 
 <div class="ratings-section">
 
+
     <h2>
+
         Customer Reviews
+
     </h2>
+
 
     <div class="rating-summary">
 
         <div class="big-rating">
+
             4.8
+
         </div>
 
         <p>
+
             Based on customer feedback
+
         </p>
 
     </div>
 
+
     <div
-    class="ratings-grid"
-    id="ratingsBox"
+        class="ratings-grid"
+        id="ratingsBox"
     >
+
         Loading reviews...
+
     </div>
 
+
     <hr
-    style="margin:40px 0;border:1px solid #222"
+        style="
+            margin:40px 0;
+            border:1px solid #222;
+        "
     >
+
 
     <div class="rating-form">
 
         <h3>
+
             Leave a Review
+
         </h3>
 
+
         <form
-        action="submit_rating.php"
-        method="POST"
+            action="submit_rating.php"
+            method="POST"
         >
 
+
             <input
-            type="text"
-            name="name"
-            placeholder="Your Name"
-            required
+                type="text"
+                name="name"
+                placeholder="Your Name"
+                required
             >
 
+
             <select
-            name="rating"
-            required
+                name="rating"
+                required
             >
 
                 <option value="">
+
                     Rating
+
                 </option>
 
                 <option value="5">
+
                     ★★★★★
+
                 </option>
 
                 <option value="4">
+
                     ★★★★
+
                 </option>
 
                 <option value="3">
+
                     ★★★
+
                 </option>
 
                 <option value="2">
+
                     ★★
+
                 </option>
 
                 <option value="1">
+
                     ★
+
                 </option>
 
             </select>
 
+
             <textarea
-            name="message"
-            placeholder="Your review..."
-            required
+                name="message"
+                placeholder="Your review..."
+                required
             ></textarea>
 
+
             <button type="submit">
+
                 Submit Review
+
             </button>
+
 
         </form>
 
     </div>
 
+
 </div>
 
 
 <!-- =========================================================
-     CTA
+     IMPROVED CTA
      ========================================================= -->
 
 <section class="section">
 
+
     <h2>
+
         Ready to Relax?
+
     </h2>
 
-    <a
-    href="booking-guest.php"
-    class="btn-primary"
+
+    <p
+        style="
+            color:#888;
+            margin:8px auto 20px;
+            max-width:520px;
+            text-align:center;
+        "
     >
-        Book Now
-    </a>
+
+        Book instantly as a guest, or create an account
+        to manage your appointments and wellness profile.
+
+    </p>
+
+
+    <div class="hero-booking-actions">
+
+
+        <a
+            href="booking-guest.php"
+            class="btn-primary hero-book-btn"
+        >
+
+            Book as Guest
+
+        </a>
+
+
+        <div class="account-prompt">
+
+            <span>
+
+                Want your own account?
+
+            </span>
+
+            <a href="login.php">
+
+                Login or Create Account
+
+            </a>
+
+        </div>
+
+
+    </div>
+
 
 </section>
 
@@ -1062,78 +1825,122 @@ $setQ = mysqli_query(
     "SELECT * FROM settings LIMIT 1"
 );
 
-$set = mysqli_fetch_assoc($setQ);
+$set =
+    mysqli_fetch_assoc($setQ);
 
 ?>
 
+
 <footer class="footer">
+
 
     <div class="footer-grid">
 
 
-        <!-- BRAND -->
-
         <div class="footer-brand">
 
+
             <h3>
-                <?= htmlspecialchars($set['site_name']) ?>
+
+                <?= htmlspecialchars(
+                    $set['site_name'] ?? 'Mizpah Wellness Spa'
+                ) ?>
+
             </h3>
 
+
             <p>
-                <?= htmlspecialchars($set['tagline']) ?>
+
+                <?= htmlspecialchars(
+                    $set['tagline'] ?? ''
+                ) ?>
+
             </p>
 
+
             <p class="footer-text">
-                <?= htmlspecialchars($set['footer_text']) ?>
+
+                <?= htmlspecialchars(
+                    $set['footer_text'] ?? ''
+                ) ?>
+
             </p>
+
 
         </div>
 
-
-        <!-- QUICK LINKS -->
 
         <div class="footer-links">
 
+
             <h4>
+
                 Quick Links
+
             </h4>
 
+
             <a href="index.php">
+
                 Home
+
             </a>
+
 
             <a href="services.php">
+
                 Services
+
             </a>
+
 
             <a href="therapist.php">
+
                 Therapists
+
             </a>
 
+
             <a href="#virtual-tour">
+
                 Virtual Tour
+
             </a>
+
 
         </div>
 
-
-        <!-- CONTACT -->
 
         <div class="footer-contact">
 
+
             <h4>
+
                 Contact Us
+
             </h4>
 
-            <p>
-                <?= htmlspecialchars($set['contact_number']) ?>
-            </p>
 
             <p>
-                <?= htmlspecialchars($set['address']) ?>
+
+                <?= htmlspecialchars(
+                    $set['contact_number'] ?? ''
+                ) ?>
+
             </p>
+
+
+            <p>
+
+                <?= htmlspecialchars(
+                    $set['address'] ?? ''
+                ) ?>
+
+            </p>
+
 
         </div>
+
 
     </div>
 
@@ -1141,10 +1948,15 @@ $set = mysqli_fetch_assoc($setQ);
     <div class="footer-bottom">
 
         <p>
-            <?= htmlspecialchars($set['copyright_text']) ?>
+
+            <?= htmlspecialchars(
+                $set['copyright_text'] ?? ''
+            ) ?>
+
         </p>
 
     </div>
+
 
 </footer>
 
@@ -1154,255 +1966,349 @@ $set = mysqli_fetch_assoc($setQ);
      ========================================================= -->
 
 <div
-class="modal"
-id="modal"
+    class="modal"
+    id="modal"
 >
+
 
     <div class="modal-box">
 
+
         <span
-        class="close"
-        onclick="closeModal()"
+            class="close"
+            onclick="closeModal()"
         >
+
             &times;
+
         </span>
+
 
         <div id="modalContent"></div>
 
+
     </div>
+
 
 </div>
 
 
-<!-- =========================================================
-     JAVASCRIPT
-     ========================================================= -->
-
 <script>
 
 
-/*
-|--------------------------------------------------------------------------
-| HEADER SCROLL
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   HEADER SCROLL
+   ========================================================= */
 
 window.addEventListener(
+
     "scroll",
+
     function(){
 
         document
         .querySelector(".site-header")
         .classList
         .toggle(
+
             "scrolled",
+
             window.scrollY > 50
+
         );
 
     }
+
 );
 
 
-/*
-|--------------------------------------------------------------------------
-| LOAD RATINGS
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   LOAD RATINGS
+   ========================================================= */
 
 function loadRatings(){
 
     fetch("fetch_ratings.php")
 
     .then(
+
         res => res.text()
+
     )
 
     .then(
+
         data => {
 
             document
-            .getElementById("ratingsBox")
+            .getElementById(
+                "ratingsBox"
+            )
             .innerHTML = data;
 
         }
+
+    )
+
+    .catch(
+
+        error => {
+
+            console.error(
+
+                "Ratings error:",
+
+                error
+
+            );
+
+        }
+
     );
 
 }
 
+
 loadRatings();
 
+
 setInterval(
+
     loadRatings,
+
     3000
+
 );
 
 
-/*
-|--------------------------------------------------------------------------
-| DYNAMIC MODAL DATA
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   DATA
+   ========================================================= */
 
 const landingServices =
+
 <?= json_encode(
+
     $landingData['signature'],
+
     JSON_UNESCAPED_UNICODE |
     JSON_UNESCAPED_SLASHES
+
 ) ?>;
 
 
 const landingPackages =
+
 <?= json_encode(
+
     $landingData['package'],
+
     JSON_UNESCAPED_UNICODE |
     JSON_UNESCAPED_SLASHES
+
 ) ?>;
 
 
 const landingPopular =
+
 <?= json_encode(
+
     $landingData['popular'],
+
     JSON_UNESCAPED_UNICODE |
     JSON_UNESCAPED_SLASHES
+
 ) ?>;
 
 
 const signatureDetails =
+
 <?= json_encode(
+
     $signatureDetails,
+
     JSON_UNESCAPED_UNICODE |
     JSON_UNESCAPED_SLASHES
+
 ) ?>;
 
 
 const packageDetails =
+
 <?= json_encode(
+
     $packageDetails,
+
     JSON_UNESCAPED_UNICODE |
     JSON_UNESCAPED_SLASHES
+
 ) ?>;
 
 
 const popularDetails =
+
 <?= json_encode(
+
     $popularDetails,
+
     JSON_UNESCAPED_UNICODE |
     JSON_UNESCAPED_SLASHES
+
 ) ?>;
 
 
-/*
-|--------------------------------------------------------------------------
-| FORMAT PRICE
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   FORMAT PRICE
+   ========================================================= */
 
 function formatPrice(price){
 
     if(
+
         price === null ||
+
         price === undefined ||
+
         price === ""
+
     ){
 
         return "Contact us";
 
     }
 
+
     return "₱" +
-        Number(price).toLocaleString(
+
+        Number(price)
+
+        .toLocaleString(
+
             "en-PH",
+
             {
+
                 minimumFractionDigits:2,
+
                 maximumFractionDigits:2
+
             }
+
         );
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| ESCAPE HTML
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   ESCAPE HTML
+   ========================================================= */
 
 function escapeHTML(value){
 
     if(
+
         value === null ||
+
         value === undefined
+
     ){
 
         return "";
 
     }
 
+
     return String(value)
 
         .replace(
+
             /&/g,
+
             "&amp;"
+
         )
 
         .replace(
+
             /</g,
+
             "&lt;"
+
         )
 
         .replace(
+
             />/g,
+
             "&gt;"
+
         )
 
         .replace(
+
             /"/g,
+
             "&quot;"
+
         )
 
         .replace(
+
             /'/g,
+
             "&#039;"
+
         );
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| OPEN MODAL
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   OPEN MODAL
+   ========================================================= */
 
 function openModal(type){
 
     let html = "";
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | SERVICES
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       SERVICE
+       ===================================================== */
 
     if(
-        type.startsWith("service_")
+
+        type.startsWith(
+            "service_"
+        )
+
     ){
 
-        let id = parseInt(
-            type.replace(
-                "service_",
-                ""
-            )
-        );
+        let id =
+
+            parseInt(
+
+                type.replace(
+
+                    "service_",
+
+                    ""
+
+                )
+
+            );
 
 
         let service =
+
             landingServices.find(
 
                 item =>
+
                 parseInt(
+
                     item.landing_id
+
                 ) === id
 
             );
@@ -1411,52 +2317,90 @@ function openModal(type){
         if(service){
 
             let detail =
+
                 signatureDetails[
                     service.service_name
                 ];
 
 
             let description =
+
                 detail
-                    ? detail.description
-                    : (
-                        service.description ||
-                        "A relaxing wellness service from Mizpah Wellness Spa."
-                    );
+
+                ?
+
+                detail.description
+
+                :
+
+                (
+
+                    service.description ||
+
+                    "A relaxing wellness service from Mizpah Wellness Spa."
+
+                );
 
 
             let bestFor =
+
                 detail
-                    ? detail.best_for
-                    : "Relaxation and wellness";
+
+                ?
+
+                detail.best_for
+
+                :
+
+                "Relaxation and wellness";
 
 
             let duration =
+
                 detail
-                    ? detail.duration
-                    : "Based on selected service";
+
+                ?
+
+                detail.duration
+
+                :
+
+                "Based on selected service";
 
 
             let price =
+
                 detail
-                    ? detail.price
-                    : formatPrice(
-                        service.price
-                    );
+
+                ?
+
+                detail.price
+
+                :
+
+                formatPrice(
+
+                    service.price
+
+                );
 
 
             html = `
 
                 <h2>
+
                     ${escapeHTML(
                         service.service_name
                     )}
+
                 </h2>
 
                 <p>
+
                     ${escapeHTML(
                         description
                     )}
+
                 </p>
 
                 <p>
@@ -1490,8 +2434,8 @@ function openModal(type){
                 </p>
 
                 <a
-                href="booking-guest.php"
-                class="popup-book"
+                    href="booking-guest.php"
+                    class="popup-book"
                 >
 
                     Book This Service
@@ -1505,30 +2449,43 @@ function openModal(type){
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | PACKAGES
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       PACKAGE
+       ===================================================== */
 
     if(
-        type.startsWith("package_")
+
+        type.startsWith(
+            "package_"
+        )
+
     ){
 
-        let id = parseInt(
-            type.replace(
-                "package_",
-                ""
-            )
-        );
+        let id =
+
+            parseInt(
+
+                type.replace(
+
+                    "package_",
+
+                    ""
+
+                )
+
+            );
 
 
         let packageItem =
+
             landingPackages.find(
 
                 item =>
+
                 parseInt(
+
                     item.landing_id
+
                 ) === id
 
             );
@@ -1537,6 +2494,7 @@ function openModal(type){
         if(packageItem){
 
             let detail =
+
                 packageDetails[
                     packageItem.service_name
                 ];
@@ -1544,48 +2502,63 @@ function openModal(type){
 
             let items = [];
 
+
             let duration =
+
                 "Based on selected package";
 
 
             let price =
+
                 formatPrice(
+
                     packageItem.price
+
                 );
 
 
             if(detail){
 
                 items =
+
                     detail.items;
 
                 duration =
+
                     detail.duration;
 
                 price =
+
                     detail.price;
 
             }else{
 
                 if(
+
                     packageItem.description
+
                 ){
 
                     items =
-                        packageItem.description
 
+                        packageItem
+                        .description
                         .split(
-                            /[,;\n]+/
-                        )
 
+                            /[,;\n]+/
+
+                        )
                         .map(
+
                             item =>
                             item.trim()
-                        )
 
+                        )
                         .filter(
+
                             item =>
                             item !== ""
+
                         );
 
                 }
@@ -1597,28 +2570,40 @@ function openModal(type){
 
 
             if(
+
                 items.length > 0
+
             ){
 
                 items.forEach(
+
                     item => {
 
-                        listHTML +=
+                        listHTML += `
 
-                        `<li>
-                            ${escapeHTML(item)}
-                        </li>`;
+                            <li>
+
+                                ${escapeHTML(item)}
+
+                            </li>
+
+                        `;
 
                     }
+
                 );
 
             }else{
 
-                listHTML =
+                listHTML = `
 
-                `<li>
-                    Package details available upon booking.
-                </li>`;
+                    <li>
+
+                        Package details available upon booking.
+
+                    </li>
+
+                `;
 
             }
 
@@ -1626,9 +2611,11 @@ function openModal(type){
             html = `
 
                 <h2>
+
                     ${escapeHTML(
                         packageItem.service_name
                     )}
+
                 </h2>
 
                 <ul>
@@ -1658,8 +2645,8 @@ function openModal(type){
                 </p>
 
                 <a
-                href="booking-guest.php"
-                class="popup-book"
+                    href="booking-guest.php"
+                    class="popup-book"
                 >
 
                     Book This Package
@@ -1673,30 +2660,43 @@ function openModal(type){
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | POPULAR
-    |--------------------------------------------------------------------------
-    */
+    /* =====================================================
+       POPULAR
+       ===================================================== */
 
     if(
-        type.startsWith("popular_")
+
+        type.startsWith(
+            "popular_"
+        )
+
     ){
 
-        let id = parseInt(
-            type.replace(
-                "popular_",
-                ""
-            )
-        );
+        let id =
+
+            parseInt(
+
+                type.replace(
+
+                    "popular_",
+
+                    ""
+
+                )
+
+            );
 
 
         let popular =
+
             landingPopular.find(
 
                 item =>
+
                 parseInt(
+
                     item.landing_id
+
                 ) === id
 
             );
@@ -1705,40 +2705,64 @@ function openModal(type){
         if(popular){
 
             let detail =
+
                 popularDetails[
                     popular.service_name
                 ];
 
 
             let description =
+
                 detail
-                    ? detail.description
-                    : (
-                        popular.description ||
-                        "A popular choice from Mizpah Wellness Spa."
-                    );
+
+                ?
+
+                detail.description
+
+                :
+
+                (
+
+                    popular.description ||
+
+                    "A popular choice from Mizpah Wellness Spa."
+
+                );
 
 
             let price =
+
                 detail
-                    ? detail.price
-                    : formatPrice(
-                        popular.price
-                    );
+
+                ?
+
+                detail.price
+
+                :
+
+                formatPrice(
+
+                    popular.price
+
+                );
 
 
             html = `
 
                 <h2>
+
                     ${escapeHTML(
                         popular.service_name
                     )}
+
                 </h2>
 
                 <p>
+
                     ${escapeHTML(
                         description
                     )}
+
                 </p>
 
                 <p>
@@ -1752,8 +2776,8 @@ function openModal(type){
                 </p>
 
                 <a
-                href="booking-guest.php"
-                class="popup-book"
+                    href="booking-guest.php"
+                    class="popup-book"
                 >
 
                     Book Now
@@ -1768,30 +2792,88 @@ function openModal(type){
 
 
     document
-    .getElementById("modalContent")
+    .getElementById(
+        "modalContent"
+    )
     .innerHTML = html;
 
 
     document
-    .getElementById("modal")
+    .getElementById(
+        "modal"
+    )
     .style.display = "flex";
 
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| CLOSE MODAL
-|--------------------------------------------------------------------------
-*/
+/* =========================================================
+   CLOSE MODAL
+   ========================================================= */
 
 function closeModal(){
 
     document
-    .getElementById("modal")
+    .getElementById(
+        "modal"
+    )
     .style.display = "none";
 
 }
+
+
+/* =========================================================
+   CLOSE MODAL WHEN CLICKING BACKDROP
+   ========================================================= */
+
+document
+.getElementById(
+    "modal"
+)
+.addEventListener(
+
+    "click",
+
+    function(e){
+
+        if(
+
+            e.target === this
+
+        ){
+
+            closeModal();
+
+        }
+
+    }
+
+);
+
+
+/* =========================================================
+   CLOSE MODAL WITH ESC
+   ========================================================= */
+
+document.addEventListener(
+
+    "keydown",
+
+    function(e){
+
+        if(
+
+            e.key === "Escape"
+
+        ){
+
+            closeModal();
+
+        }
+
+    }
+
+);
 
 </script>
 

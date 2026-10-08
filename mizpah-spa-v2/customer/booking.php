@@ -1,8 +1,11 @@
 <?php
 
 session_start();
-
 include '../includes/db.php';
+
+/* =========================
+   LOGIN CHECK
+========================= */
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../login.php");
@@ -11,91 +14,217 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = (int)$_SESSION['user_id'];
 
+
+/* =========================
+   USER INFORMATION
+========================= */
+
+$user_query = mysqli_query($conn, "
+    SELECT name, email, profile_pic
+    FROM users
+    WHERE id='$user_id'
+    LIMIT 1
+");
+
+$user = mysqli_fetch_assoc($user_query);
+
+$user_name = $user['name'] ?? '';
+$user_email = $user['email'] ?? '';
+$profile_pic = $user['profile_pic'] ?? '';
+
+if (!empty($profile_pic)) {
+    $profile_image = "../uploads/profile/" . $profile_pic;
+} else {
+    $profile_image = "../assets/images/default-profile.png";
+}
+
+
+/* =========================
+   GET LAST PHONE NUMBER
+========================= */
+
+$last_phone = '';
+
+$phone_query = mysqli_query($conn, "
+    SELECT phone
+    FROM bookings
+    WHERE user_id='$user_id'
+    AND phone IS NOT NULL
+    AND phone != ''
+    ORDER BY id DESC
+    LIMIT 1
+");
+
+if ($phone_query && mysqli_num_rows($phone_query) > 0) {
+    $phone_row = mysqli_fetch_assoc($phone_query);
+    $last_phone = $phone_row['phone'] ?? '';
+}
+
+
+/* =========================
+   SUBMIT BOOKING
+========================= */
+
 if (isset($_POST['submit_booking'])) {
 
     $name = $_POST['customer_name'] ?? '';
     $phone = $_POST['phone'] ?? '';
+
     $service_id = $_POST['service_id'] ?? '';
     $service = $_POST['service'] ?? '';
+
     $duration = $_POST['duration'] ?? '';
-    $price = $_POST['price'] ?? 0;
-    $date = $_POST['booking_date'] ?? '';
-    $time = $_POST['booking_time'] ?? '';
-    $pax = (int)($_POST['pax'] ?? 1);
-    $payment = $_POST['payment_method'] ?? 'Cash';
-    $notes = $_POST['notes'] ?? '';
-    $therapist = $_POST['therapist'] ?? '';
-    $addons = $_POST['addons'] ?? '';
-    $room_type = $_POST['room_type'] ?? '';
 
     /*
-       COUPLE ROOM AUTOMATIC PAX
+       IMPORTANT:
+       price now contains:
+       SERVICE/DURATION PRICE + ADD-ON PRICES
     */
+    $price = $_POST['price'] ?? 0;
+
+    $date = $_POST['booking_date'] ?? '';
+    $time = $_POST['booking_time'] ?? '';
+
+    $pax = (int)($_POST['pax'] ?? 1);
+
+    $payment = $_POST['payment_method'] ?? 'Cash';
+
+    $notes = $_POST['notes'] ?? '';
+
+    $therapist = $_POST['therapist'] ?? '';
+
+    $addons = $_POST['addons'] ?? '';
+
+    $room_type = $_POST['room_type'] ?? '';
+
+
+    /* =========================
+       COUPLE ROOM = 2 PAX
+    ========================= */
+
     if ($room_type === "Couple Room") {
         $pax = 2;
     }
 
+
+    /* =========================
+       ESCAPE VALUES
+    ========================= */
+
     $name = mysqli_real_escape_string($conn, $name);
+
     $phone = mysqli_real_escape_string($conn, $phone);
+
     $service_id = (int)$service_id;
+
     $service = mysqli_real_escape_string($conn, $service);
+
     $duration = mysqli_real_escape_string($conn, $duration);
+
     $price = (float)$price;
+
     $date = mysqli_real_escape_string($conn, $date);
+
     $time = mysqli_real_escape_string($conn, $time);
+
     $payment = mysqli_real_escape_string($conn, $payment);
+
     $notes = mysqli_real_escape_string($conn, $notes);
+
     $therapist = (int)$therapist;
+
     $addons = mysqli_real_escape_string($conn, $addons);
+
     $room_type = mysqli_real_escape_string($conn, $room_type);
 
-    $sql = "INSERT INTO bookings
-    (
-        user_id,
-        service_id,
-        service,
-        duration,
-        price,
-        customer_name,
-        phone,
-        booking_date,
-        booking_time,
-        pax,
-        payment_method,
-        notes,
-        addons,
-        therapist_id,
-        room_type,
-        status
-    )
-    VALUES
-    (
-        '$user_id',
-        '$service_id',
-        '$service',
-        '$duration',
-        '$price',
-        '$name',
-        '$phone',
-        '$date',
-        '$time',
-        '$pax',
-        '$payment',
-        '$notes',
-        '$addons',
-        '$therapist',
-        '$room_type',
-        'Pending'
-    )";
+
+    /* =========================
+       INSERT BOOKING
+    ========================= */
+
+    $sql = "
+        INSERT INTO bookings
+        (
+            user_id,
+            service_id,
+            service,
+            duration,
+            price,
+            customer_name,
+            phone,
+            booking_date,
+            booking_time,
+            pax,
+            payment_method,
+            notes,
+            addons,
+            therapist_id,
+            room_type,
+            status
+        )
+        VALUES
+        (
+            '$user_id',
+            '$service_id',
+            '$service',
+            '$duration',
+            '$price',
+            '$name',
+            '$phone',
+            '$date',
+            '$time',
+            '$pax',
+            '$payment',
+            '$notes',
+            '$addons',
+            '$therapist',
+            '$room_type',
+            'Pending'
+        )
+    ";
+
 
     if (mysqli_query($conn, $sql)) {
 
-        header("Location: thankyou.php?id=" . mysqli_insert_id($conn));
+        $booking_id = mysqli_insert_id($conn);
+
+        /*
+           Keep booking_therapists synchronized
+           when customer selected a therapist.
+        */
+
+        if ($therapist > 0) {
+
+            mysqli_query($conn, "
+                INSERT INTO booking_therapists
+                (
+                    booking_id,
+                    therapist_id,
+                    assigned_by
+                )
+                VALUES
+                (
+                    '$booking_id',
+                    '$therapist',
+                    'customer'
+                )
+            ");
+
+        }
+
+        header(
+            "Location: thankyou.php?id=" .
+            $booking_id
+        );
+
         exit;
 
     } else {
 
-        echo "Booking Error: " . mysqli_error($conn);
+        die(
+            "Booking Error: " .
+            mysqli_error($conn)
+        );
 
     }
 }
@@ -103,192 +232,1081 @@ if (isset($_POST['submit_booking'])) {
 ?>
 
 <!DOCTYPE html>
-<html>
+
+<html lang="en">
 
 <head>
 
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="UTF-8">
 
-<title>Customer Booking</title>
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+<title>Book an Appointment</title>
+
+<link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+>
 
 <style>
 
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Poppins;
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins,sans-serif;
 }
 
-body {
-    background: #0b0b0b;
-    color: #fff;
+html{
+    scroll-behavior:smooth;
 }
 
-.header {
-    padding: 18px;
-    text-align: center;
-    color: #D6C29C;
-    border-bottom: 1px solid #222;
+body{
+
+    background:
+        linear-gradient(
+            rgba(0,0,0,.82),
+            rgba(0,0,0,.92)
+        ),
+        url('../assets/images/hero.jpg')
+        center/cover fixed no-repeat;
+
+    color:#fff;
+
+    min-height:100vh;
+
 }
 
-.container {
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
+
+/* =========================
+   HEADER
+========================= */
+
+header{
+
+    display:flex;
+
+    justify-content:space-between;
+    align-items:center;
+
+    padding:14px 8%;
+
+    background:
+        rgba(10,10,10,.95);
+
+    border-bottom:
+        1px solid
+        rgba(214,194,156,.15);
+
+    position:sticky;
+
+    top:0;
+
+    z-index:1000;
+
 }
 
-.box {
-    background: #141414;
-    border: 1px solid #222;
-    border-radius: 14px;
-    padding: 18px;
-    margin-bottom: 12px;
+.logo{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    color:#D6C29C;
+
+    font-weight:600;
+
 }
 
-h3 {
-    font-size: 12px;
-    color: #D6C29C;
-    margin-bottom: 10px;
+.logo img{
+
+    height:40px;
+
 }
 
-h4 {
-    color: #D6C29C;
-    margin-bottom: 8px;
+nav{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
 }
 
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px;
+nav a{
+
+    color:#fff;
+
+    padding:8px 11px;
+
+    text-decoration:none;
+
+    font-size:13px;
+
+    opacity:.8;
+
+    transition:.2s;
+
 }
 
-.card {
-    background: #111;
-    border: 1px solid #222;
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-    cursor: pointer;
-    font-size: 12px;
-    transition: .2s;
+nav a:hover{
+
+    color:#D6C29C;
+
+    opacity:1;
+
 }
 
-.card:hover {
-    border-color: #8d7650;
+.profile-mini{
+
+    width:36px;
+    height:36px;
+
+    object-fit:cover;
+
+    border-radius:50%;
+
+    border:
+        2px solid
+        #D6C29C;
+
+    margin-left:8px;
+
 }
 
-.card.active {
-    border: 2px solid #D6C29C;
+
+/* =========================
+   PAGE
+========================= */
+
+.page{
+
+    width:100%;
+
+    max-width:1250px;
+
+    margin:auto;
+
+    padding:
+        38px 5%
+        70px;
+
 }
 
-.card.dim {
-    opacity: .3;
-    pointer-events: none;
+
+/* =========================
+   TITLE
+========================= */
+
+.page-heading{
+
+    margin-bottom:28px;
+
 }
 
-.card.unavailable {
-    opacity: .35;
-    cursor: not-allowed;
-    border-color: #422;
+.page-heading h1{
+
+    font-family:
+        'Playfair Display',
+        serif;
+
+    color:#D6C29C;
+
+    font-size:32px;
+
+    margin-bottom:7px;
+
 }
 
-.desc {
-    font-size: 11px;
-    color: #aaa;
-    margin-top: 4px;
+.page-heading p{
+
+    color:#888;
+
+    font-size:12px;
+
+    line-height:1.7;
+
+    max-width:650px;
+
 }
 
-.available-text {
-    color: #9fcf9f;
+
+/* =========================
+   LAYOUT
+========================= */
+
+.booking-layout{
+
+    display:grid;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        330px;
+
+    gap:22px;
+
+    align-items:start;
+
 }
 
-.unavailable-text {
-    color: #d58d8d;
+
+/* =========================
+   SECTION
+========================= */
+
+.section{
+
+    background:
+        rgba(18,18,18,.91);
+
+    border:
+        1px solid
+        rgba(255,255,255,.07);
+
+    border-radius:16px;
+
+    padding:22px;
+
+    margin-bottom:15px;
+
+    box-shadow:
+        0 12px 30px
+        rgba(0,0,0,.18);
+
+}
+
+.section-head{
+
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:12px;
+
+    margin-bottom:18px;
+
+}
+
+.step{
+
+    width:29px;
+    height:29px;
+
+    min-width:29px;
+
+    display:flex;
+
+    justify-content:center;
+    align-items:center;
+
+    border-radius:50%;
+
+    background:
+        rgba(214,194,156,.10);
+
+    border:
+        1px solid
+        rgba(214,194,156,.25);
+
+    color:#D6C29C;
+
+    font-size:11px;
+
+    font-weight:600;
+
+}
+
+.section-title{
+
+    color:#D6C29C;
+
+    font-size:14px;
+
+    font-weight:600;
+
+    margin-bottom:3px;
+
+}
+
+.section-sub{
+
+    color:#666;
+
+    font-size:10px;
+
+    line-height:1.5;
+
+}
+
+
+/* =========================
+   SUB LABEL
+========================= */
+
+.field-title{
+
+    color:#aaa;
+
+    font-size:10px;
+
+    font-weight:500;
+
+    text-transform:uppercase;
+
+    letter-spacing:.6px;
+
+    margin:
+        18px 0
+        9px;
+
+}
+
+.field-title:first-child{
+
+    margin-top:0;
+
+}
+
+
+/* =========================
+   GRID
+========================= */
+
+.selection-grid{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(130px,1fr)
+        );
+
+    gap:9px;
+
+}
+
+
+/* =========================
+   SELECTABLE CARD
+========================= */
+
+.select-card{
+
+    position:relative;
+
+    background:#101010;
+
+    border:
+        1px solid
+        #292929;
+
+    border-radius:10px;
+
+    padding:13px 10px;
+
+    text-align:center;
+
+    cursor:pointer;
+
+    font-size:11px;
+
+    color:#ccc;
+
+    transition:.2s;
+
+    min-height:48px;
+
+    display:flex;
+
+    flex-direction:column;
+
+    justify-content:center;
+    align-items:center;
+
+}
+
+.select-card:hover{
+
+    border-color:
+        rgba(214,194,156,.55);
+
+    color:#fff;
+
+    transform:
+        translateY(-1px);
+
+}
+
+.select-card.active{
+
+    border:
+        1px solid
+        #D6C29C;
+
+    background:
+        rgba(214,194,156,.08);
+
+    color:#D6C29C;
+
+    box-shadow:
+        0 0 0 1px
+        rgba(214,194,156,.05);
+
+}
+
+.select-card.unavailable{
+
+    opacity:.30;
+
+    cursor:not-allowed;
+
+    border-color:#382626;
+
+}
+
+.select-card.dim{
+
+    opacity:.28;
+
+    cursor:not-allowed;
+
+    pointer-events:none;
+
+}
+
+.card-price{
+
+    color:#D6C29C;
+
+    font-size:10px;
+
+    margin-top:3px;
+
+}
+
+.card-desc{
+
+    color:#666;
+
+    font-size:9px;
+
+    margin-top:4px;
+
+    line-height:1.4;
+
+}
+
+.available-text{
+
+    color:#9ab99a;
+
+}
+
+.unavailable-text{
+
+    color:#bd8585;
+
+}
+
+
+/* =========================
+   SERVICE DESCRIPTION
+========================= */
+
+.service-description{
+
+    margin-top:11px;
+
+    padding:11px 13px;
+
+    background:#0e0e0e;
+
+    border-left:
+        2px solid
+        #D6C29C;
+
+    border-radius:
+        0 8px 8px 0;
+
+    color:#888;
+
+    font-size:10px;
+
+    line-height:1.7;
+
+}
+
+
+/* =========================
+   INPUTS
+========================= */
+
+.form-grid{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(2,1fr);
+
+    gap:14px;
+
+}
+
+.form-group{
+
+    margin-bottom:2px;
+
+}
+
+.full{
+
+    grid-column:
+        1 / -1;
+
+}
+
+label{
+
+    display:block;
+
+    color:#999;
+
+    font-size:10px;
+
+    margin-bottom:6px;
+
+}
+
+.required{
+
+    color:#D6C29C;
+
 }
 
 input,
 select,
-textarea {
-    width: 100%;
-    padding: 10px;
-    margin-top: 6px;
-    background: #0f0f0f;
-    color: #fff;
-    border: 1px solid #333;
-    border-radius: 10px;
+textarea{
+
+    width:100%;
+
+    padding:11px 12px;
+
+    background:#0f0f0f;
+
+    color:#fff;
+
+    border:
+        1px solid
+        #303030;
+
+    border-radius:9px;
+
+    outline:none;
+
+    font-size:11px;
+
+    transition:.2s;
+
 }
 
-input:read-only {
-    opacity: .7;
+input:focus,
+select:focus,
+textarea:focus{
+
+    border-color:#D6C29C;
+
+    box-shadow:
+        0 0 7px
+        rgba(214,194,156,.12);
+
 }
 
-textarea {
-    min-height: 80px;
-    resize: vertical;
+input::placeholder,
+textarea::placeholder{
+
+    color:#555;
+
 }
 
-.btn {
-    width: 100%;
-    padding: 14px;
-    background: #D6C29C;
-    color: #111;
-    border: none;
-    border-radius: 12px;
-    font-weight: bold;
-    cursor: pointer;
+select option{
+
+    background:#111;
+
 }
 
-.btn:hover {
-    background: #c5af87;
+textarea{
+
+    min-height:90px;
+
+    resize:vertical;
+
+    line-height:1.6;
+
 }
 
-.summary {
-    background: #111;
-    border: 1px solid #333;
-    border-radius: 12px;
-    padding: 12px;
-    font-size: 12px;
-    margin-bottom: 10px;
-    position: sticky;
-    top: 10px;
+input:read-only{
+
+    opacity:.65;
+
 }
 
-.time-card {
-    background: #111;
-    border: 1px solid #222;
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-    cursor: pointer;
-    font-size: 12px;
+
+/* =========================
+   SCHEDULE GRID
+========================= */
+
+.schedule-grid{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(2,1fr);
+
+    gap:16px;
+
 }
 
-.time-card:hover {
-    border-color: #8d7650;
+.schedule-block{
+
+    min-width:0;
+
 }
 
-.time-card.active {
-    border: 2px solid #D6C29C;
+
+/* =========================
+   TIME
+========================= */
+
+.time-grid{
+
+    display:grid;
+
+    grid-template-columns:
+        repeat(4,1fr);
+
+    gap:8px;
+
 }
 
-.time-card.dim {
-    opacity: .3;
-    pointer-events: none;
+.time-card{
+
+    background:#101010;
+
+    border:
+        1px solid
+        #292929;
+
+    border-radius:9px;
+
+    padding:10px 5px;
+
+    text-align:center;
+
+    cursor:pointer;
+
+    color:#ccc;
+
+    font-size:10px;
+
+    transition:.2s;
+
 }
 
-.small {
-    font-size: 11px;
-    color: #aaa;
+.time-card:hover{
+
+    border-color:#D6C29C;
+
 }
 
-.message {
-    font-size: 11px;
-    color: #aaa;
-    margin-top: 8px;
+.time-card.active{
+
+    border-color:#D6C29C;
+
+    background:
+        rgba(214,194,156,.08);
+
+    color:#D6C29C;
+
+}
+
+.time-card.dim{
+
+    opacity:.25;
+
+    pointer-events:none;
+
+}
+
+.slot-count{
+
+    display:block;
+
+    color:#666;
+
+    font-size:8px;
+
+    margin-top:3px;
+
+}
+
+
+/* =========================
+   MESSAGE
+========================= */
+
+.message{
+
+    color:#777;
+
+    font-size:10px;
+
+    margin-top:10px;
+
+    line-height:1.6;
+
+}
+
+
+/* =========================
+   SUMMARY
+========================= */
+
+.summary-panel{
+
+    position:sticky;
+
+    top:86px;
+
+    background:
+        rgba(18,18,18,.96);
+
+    border:
+        1px solid
+        rgba(214,194,156,.17);
+
+    border-radius:16px;
+
+    padding:22px;
+
+    box-shadow:
+        0 16px 40px
+        rgba(0,0,0,.30);
+
+}
+
+.summary-panel h3{
+
+    font-family:
+        'Playfair Display',
+        serif;
+
+    color:#D6C29C;
+
+    font-size:20px;
+
+    margin-bottom:5px;
+
+}
+
+.summary-sub{
+
+    color:#666;
+
+    font-size:9px;
+
+    margin-bottom:19px;
+
+}
+
+.summary-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    gap:12px;
+
+    padding:10px 0;
+
+    border-bottom:
+        1px solid
+        #272727;
+
+}
+
+.summary-label{
+
+    color:#777;
+
+    font-size:9px;
+
+}
+
+.summary-value{
+
+    color:#ddd;
+
+    font-size:10px;
+
+    text-align:right;
+
+    max-width:175px;
+
+}
+
+.summary-addons{
+
+    color:#aaa;
+
+    font-size:9px;
+
+    line-height:1.6;
+
+}
+
+.price-area{
+
+    padding:
+        15px 0 5px;
+
+}
+
+.price-line{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    gap:10px;
+
+    margin-bottom:7px;
+
+    color:#888;
+
+    font-size:9px;
+
+}
+
+.total-line{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-top:12px;
+
+    padding-top:13px;
+
+    border-top:
+        1px solid
+        rgba(214,194,156,.18);
+
+}
+
+.total-label{
+
+    color:#aaa;
+
+    font-size:11px;
+
+}
+
+.total-price{
+
+    color:#D6C29C;
+
+    font-size:21px;
+
+    font-weight:600;
+
+}
+
+
+/* =========================
+   BOOK BUTTON
+========================= */
+
+.book-btn{
+
+    width:100%;
+
+    padding:13px;
+
+    margin-top:17px;
+
+    border:none;
+
+    border-radius:9px;
+
+    background:#D6C29C;
+
+    color:#111;
+
+    font-size:11px;
+
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.2s;
+
+}
+
+.book-btn:hover{
+
+    transform:
+        translateY(-2px);
+
+    box-shadow:
+        0 8px 20px
+        rgba(214,194,156,.18);
+
+}
+
+.booking-note{
+
+    margin-top:10px;
+
+    color:#555;
+
+    font-size:8px;
+
+    text-align:center;
+
+    line-height:1.5;
+
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:1000px){
+
+    .booking-layout{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .summary-panel{
+
+        position:static;
+
+    }
+
+}
+
+@media(max-width:750px){
+
+    header{
+
+        padding:12px 4%;
+
+    }
+
+    .logo span{
+
+        display:none;
+
+    }
+
+    nav{
+
+        gap:1px;
+
+    }
+
+    nav a{
+
+        padding:6px;
+
+        font-size:10px;
+
+    }
+
+    .profile-mini{
+
+        width:32px;
+        height:32px;
+
+        margin-left:4px;
+
+    }
+
+    .page{
+
+        padding:
+            28px 4%
+            50px;
+
+    }
+
+    .schedule-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .time-grid{
+
+        grid-template-columns:
+            repeat(3,1fr);
+
+    }
+
+}
+
+@media(max-width:550px){
+
+    .page-heading h1{
+
+        font-size:27px;
+
+    }
+
+    .section{
+
+        padding:17px;
+
+    }
+
+    .form-grid{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .full{
+
+        grid-column:auto;
+
+    }
+
+    .selection-grid{
+
+        grid-template-columns:
+            repeat(2,1fr);
+
+    }
+
+    .time-grid{
+
+        grid-template-columns:
+            repeat(2,1fr);
+
+    }
+
 }
 
 </style>
@@ -297,231 +1315,792 @@ textarea {
 
 <body>
 
-<div class="header">
-    CUSTOMER BOOKING
-</div>
 
-<div class="container">
+<!-- =========================
+     HEADER
+========================= -->
 
-<form method="POST" id="bookingForm">
+<header>
 
-    <!-- CATEGORY -->
+    <div class="logo">
 
-    <div class="box">
-
-        <h3>CATEGORY</h3>
-
-        <div class="grid">
-
-            <div class="card category" data-cat="Massage">
-                Massage
-            </div>
-
-            <div class="card category" data-cat="Package">
-                Package
-            </div>
-
-            <div class="card category" data-cat="Promo">
-                Promo
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <!-- SERVICE -->
-
-    <div class="box">
-
-        <h3>SERVICE</h3>
-
-        <div class="grid" id="serviceBox"></div>
-
-        <div id="serviceDesc" class="small">
-            Select service to view description
-        </div>
-
-    </div>
-
-
-    <!-- DURATION -->
-
-    <div class="box">
-
-        <h3>DURATION</h3>
-
-        <div class="grid" id="durationBox"></div>
-
-    </div>
-
-
-    <!-- ADDONS -->
-
-    <div class="box">
-
-        <h3>ADD-ONS</h3>
-
-        <div class="grid" id="addonBox"></div>
-
-        <input type="hidden" name="addons" id="addons">
-
-    </div>
-
-
-    <!-- ROOM -->
-
-    <div class="box">
-
-        <h3>ROOM</h3>
-
-        <div class="grid">
-
-            <div class="card room" data-room="Single Room">
-                Single
-            </div>
-
-            <div class="card room" data-room="Couple Room">
-                Couple
-            </div>
-
-        </div>
-
-        <input type="hidden" name="room_type" id="room_type">
-
-    </div>
-
-
-    <!-- DATE -->
-
-    <div class="box">
-
-        <h3>DATE</h3>
-
-        <input
-            type="date"
-            id="booking_date"
-            name="booking_date"
-            required
+        <img
+            src="../assets/images/logo.png"
+            alt="Mizpah Logo"
         >
 
-    </div>
-
-
-    <!-- TIME -->
-
-    <div class="box">
-
-        <h3>TIME</h3>
-
-        <div class="grid" id="timeBox"></div>
-
-        <input
-            type="hidden"
-            name="booking_time"
-            id="booking_time"
-        >
+        <span>
+            Mizpah Wellness Spa
+        </span>
 
     </div>
 
 
-    <!-- THERAPIST -->
+    <nav>
 
-    <div class="box">
+        <a href="dashboard.php">
+            Home
+        </a>
 
-        <h3>THERAPIST</h3>
+        <a href="mybookings.php">
+            My Bookings
+        </a>
 
-        <div
-            class="grid"
-            id="therapistBox"
-        ></div>
+        <a href="profile.php">
+            Profile
+        </a>
 
-        <div
-            id="therapistMessage"
-            class="message"
+        <a href="logout.php">
+            Logout
+        </a>
+
+        <img
+            src="<?= htmlspecialchars($profile_image) ?>"
+            class="profile-mini"
+            alt="Profile"
         >
-            Select date and time first.
-        </div>
 
-        <input
-            type="hidden"
-            name="therapist"
-            id="therapist"
-        >
+    </nav>
+
+</header>
+
+
+<!-- =========================
+     PAGE
+========================= -->
+
+<div class="page">
+
+
+    <div class="page-heading">
+
+        <h1>
+            Book an Appointment
+        </h1>
+
+        <p>
+            Choose your preferred service, schedule,
+            room and therapist. Review your booking
+            details before confirming your appointment.
+        </p>
 
     </div>
 
 
-    <!-- CUSTOMER -->
-
-    <div class="box">
-
-        <h3>CUSTOMER</h3>
-
-        <input
-            name="customer_name"
-            placeholder="Full Name"
-            required
-        >
-
-        <input
-            name="phone"
-            placeholder="Phone Number"
-            required
-        >
-
-        <input
-            type="number"
-            name="pax"
-            value="1"
-            min="1"
-            max="6"
-            required
-        >
-
-        <select name="payment_method">
-
-            <option value="Cash">
-                Cash
-            </option>
-
-            <option value="GCash">
-                GCash
-            </option>
-
-        </select>
-
-        <textarea
-            name="notes"
-            placeholder="Notes"
-        ></textarea>
-
-    </div>
-
-
-    <!-- SUMMARY -->
-
-    <div class="summary" id="summaryBox">
-
-        <h4>SUMMARY</h4>
-
-        Service: -<br>
-        Duration: -<br>
-        Room: -<br>
-        Time: -<br>
-        Therapist: -
-
-    </div>
-
-
-    <button
-        class="btn"
-        type="submit"
-        name="submit_booking"
+    <form
+        method="POST"
+        id="bookingForm"
     >
-        BOOK NOW
-    </button>
 
+
+    <div class="booking-layout">
+
+
+        <!-- =========================
+             LEFT SIDE
+        ========================= -->
+
+        <div>
+
+
+            <!-- =====================
+                 STEP 1
+            ====================== -->
+
+            <div class="section">
+
+                <div class="section-head">
+
+                    <div class="step">
+                        1
+                    </div>
+
+                    <div>
+
+                        <div class="section-title">
+                            Choose Your Service
+                        </div>
+
+                        <div class="section-sub">
+                            Select a category, service,
+                            duration and optional add-ons.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- CATEGORY -->
+
+                <div class="field-title">
+                    Category
+                </div>
+
+                <div class="selection-grid">
+
+                    <div
+                        class="select-card category"
+                        data-cat="Massage"
+                    >
+                        Massage
+                    </div>
+
+                    <div
+                        class="select-card category"
+                        data-cat="Package"
+                    >
+                        Package
+                    </div>
+
+                    <div
+                        class="select-card category"
+                        data-cat="Promo"
+                    >
+                        Promo
+                    </div>
+
+                </div>
+
+
+                <!-- SERVICE -->
+
+                <div class="field-title">
+                    Service
+                </div>
+
+                <div
+                    class="selection-grid"
+                    id="serviceBox"
+                >
+
+                    <div
+                        class="message"
+                        style="grid-column:1/-1;"
+                    >
+                        Select a category first.
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="serviceDesc"
+                    class="service-description"
+                >
+                    Select a service to view
+                    its description.
+                </div>
+
+
+                <!-- DURATION -->
+
+                <div class="field-title">
+                    Duration
+                </div>
+
+                <div
+                    class="selection-grid"
+                    id="durationBox"
+                >
+
+                    <div
+                        class="message"
+                        style="grid-column:1/-1;"
+                    >
+                        Select a service first.
+                    </div>
+
+                </div>
+
+
+                <!-- ADDONS -->
+
+                <div class="field-title">
+                    Add-ons
+                    <span style="
+                        color:#555;
+                        text-transform:none;
+                    ">
+                        (Optional)
+                    </span>
+                </div>
+
+                <div
+                    class="selection-grid"
+                    id="addonBox"
+                >
+
+                    <div
+                        class="message"
+                        style="grid-column:1/-1;"
+                    >
+                        Add-ons will appear
+                        after selecting a service.
+                    </div>
+
+                </div>
+
+                <input
+                    type="hidden"
+                    name="addons"
+                    id="addons"
+                >
+
+            </div>
+
+
+            <!-- =====================
+                 STEP 2
+            ====================== -->
+
+            <div class="section">
+
+                <div class="section-head">
+
+                    <div class="step">
+                        2
+                    </div>
+
+                    <div>
+
+                        <div class="section-title">
+                            Schedule & Room
+                        </div>
+
+                        <div class="section-sub">
+                            Choose your preferred room,
+                            appointment date and available
+                            time.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- ROOM -->
+
+                <div class="field-title">
+                    Room Type
+                </div>
+
+                <div class="selection-grid">
+
+                    <div
+                        class="select-card room"
+                        data-room="Single Room"
+                    >
+
+                        Single Room
+
+                        <div class="card-desc">
+                            Individual booking
+                        </div>
+
+                    </div>
+
+                    <div
+                        class="select-card room"
+                        data-room="Couple Room"
+                    >
+
+                        Couple Room
+
+                        <div class="card-desc">
+                            Automatically 2 pax
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <input
+                    type="hidden"
+                    name="room_type"
+                    id="room_type"
+                >
+
+
+                <div
+                    class="schedule-grid"
+                    style="margin-top:18px;"
+                >
+
+
+                    <!-- DATE -->
+
+                    <div class="schedule-block">
+
+                        <label for="booking_date">
+
+                            Appointment Date
+                            <span class="required">*</span>
+
+                        </label>
+
+                        <input
+                            type="date"
+                            id="booking_date"
+                            name="booking_date"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- PAX -->
+
+                    <div class="schedule-block">
+
+                        <label for="pax">
+
+                            Number of Guests
+                            <span class="required">*</span>
+
+                        </label>
+
+                        <input
+                            type="number"
+                            id="pax"
+                            name="pax"
+                            value="1"
+                            min="1"
+                            max="6"
+                            required
+                        >
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- TIME -->
+
+                <div class="field-title">
+                    Available Time
+                </div>
+
+                <div
+                    class="time-grid"
+                    id="timeBox"
+                >
+
+                    <div
+                        class="message"
+                        style="grid-column:1/-1;"
+                    >
+                        Select an appointment
+                        date first.
+                    </div>
+
+                </div>
+
+
+                <input
+                    type="hidden"
+                    name="booking_time"
+                    id="booking_time"
+                >
+
+            </div>
+
+
+            <!-- =====================
+                 STEP 3
+            ====================== -->
+
+            <div class="section">
+
+                <div class="section-head">
+
+                    <div class="step">
+                        3
+                    </div>
+
+                    <div>
+
+                        <div class="section-title">
+                            Choose Your Therapist
+                        </div>
+
+                        <div class="section-sub">
+                            Therapist availability is based
+                            on your selected date, time and
+                            service duration.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="selection-grid"
+                    id="therapistBox"
+                ></div>
+
+
+                <div
+                    id="therapistMessage"
+                    class="message"
+                >
+                    Select a date and time first.
+                </div>
+
+
+                <input
+                    type="hidden"
+                    name="therapist"
+                    id="therapist"
+                >
+
+            </div>
+
+
+            <!-- =====================
+                 STEP 4
+            ====================== -->
+
+            <div class="section">
+
+                <div class="section-head">
+
+                    <div class="step">
+                        4
+                    </div>
+
+                    <div>
+
+                        <div class="section-title">
+                            Customer Details
+                        </div>
+
+                        <div class="section-sub">
+                            Confirm your contact information
+                            and select your payment method.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-grid">
+
+
+                    <!-- NAME -->
+
+                    <div class="form-group">
+
+                        <label>
+
+                            Full Name
+                            <span class="required">*</span>
+
+                        </label>
+
+                        <input
+                            type="text"
+                            name="customer_name"
+                            value="<?= htmlspecialchars($user_name) ?>"
+                            placeholder="Full name"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- PHONE -->
+
+                    <div class="form-group">
+
+                        <label>
+
+                            Phone Number
+                            <span class="required">*</span>
+
+                        </label>
+
+                        <input
+                            type="text"
+                            name="phone"
+                            value="<?= htmlspecialchars($last_phone) ?>"
+                            placeholder="09XXXXXXXXX"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- PAYMENT -->
+
+                    <div class="form-group full">
+
+                        <label>
+
+                            Payment Method
+                            <span class="required">*</span>
+
+                        </label>
+
+                        <select
+                            name="payment_method"
+                            required
+                        >
+
+                            <option value="Cash">
+                                Cash
+                            </option>
+
+                            <option value="GCash">
+                                GCash
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <!-- NOTES -->
+
+                    <div class="form-group full">
+
+                        <label>
+
+                            Notes / Special Request
+
+                            <span style="color:#555;">
+                                (Optional)
+                            </span>
+
+                        </label>
+
+                        <textarea
+                            name="notes"
+                            placeholder="Any additional request for your appointment..."
+                        ></textarea>
+
+                    </div>
+
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =========================
+             RIGHT SUMMARY
+        ========================= -->
+
+        <div>
+
+
+            <div
+                class="summary-panel"
+                id="summaryBox"
+            >
+
+                <h3>
+                    Booking Summary
+                </h3>
+
+                <div class="summary-sub">
+                    Review your appointment before booking.
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span class="summary-label">
+                        Service
+                    </span>
+
+                    <span
+                        class="summary-value"
+                        id="sumService"
+                    >
+                        —
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span class="summary-label">
+                        Duration
+                    </span>
+
+                    <span
+                        class="summary-value"
+                        id="sumDuration"
+                    >
+                        —
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span class="summary-label">
+                        Room
+                    </span>
+
+                    <span
+                        class="summary-value"
+                        id="sumRoom"
+                    >
+                        —
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span class="summary-label">
+                        Date
+                    </span>
+
+                    <span
+                        class="summary-value"
+                        id="sumDate"
+                    >
+                        —
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span class="summary-label">
+                        Time
+                    </span>
+
+                    <span
+                        class="summary-value"
+                        id="sumTime"
+                    >
+                        —
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span class="summary-label">
+                        Therapist
+                    </span>
+
+                    <span
+                        class="summary-value"
+                        id="sumTherapist"
+                    >
+                        —
+                    </span>
+
+                </div>
+
+
+                <div class="summary-row">
+
+                    <span class="summary-label">
+                        Add-ons
+                    </span>
+
+                    <span
+                        class="summary-value summary-addons"
+                        id="sumAddons"
+                    >
+                        None
+                    </span>
+
+                </div>
+
+
+                <!-- PRICE -->
+
+                <div class="price-area">
+
+                    <div class="price-line">
+
+                        <span>
+                            Service
+                        </span>
+
+                        <span id="sumBasePrice">
+                            ₱0.00
+                        </span>
+
+                    </div>
+
+
+                    <div class="price-line">
+
+                        <span>
+                            Add-ons
+                        </span>
+
+                        <span id="sumAddonPrice">
+                            ₱0.00
+                        </span>
+
+                    </div>
+
+
+                    <div class="total-line">
+
+                        <span class="total-label">
+                            Total
+                        </span>
+
+                        <span
+                            class="total-price"
+                            id="sumTotal"
+                        >
+                            ₱0.00
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    class="book-btn"
+                    type="submit"
+                    name="submit_booking"
+                >
+                    Confirm Booking
+                </button>
+
+
+                <div class="booking-note">
+                    Your booking will initially be
+                    submitted as Pending.
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+    <!-- =========================
+         HIDDEN VALUES
+    ========================= -->
 
     <input
         type="hidden"
@@ -545,364 +2124,1012 @@ textarea {
         type="hidden"
         name="price"
         id="price"
+        value="0"
     >
 
-</form>
+
+    </form>
+
 
 </div>
 
 
 <script>
 
+/* =========================
+   ELEMENTS
+========================= */
+
+const serviceBox =
+    document.getElementById('serviceBox');
+
+const serviceDesc =
+    document.getElementById('serviceDesc');
+
+const durationBox =
+    document.getElementById('durationBox');
+
+const addonBox =
+    document.getElementById('addonBox');
+
+const timeBox =
+    document.getElementById('timeBox');
+
+const therapistBox =
+    document.getElementById('therapistBox');
+
+const therapistMessage =
+    document.getElementById('therapistMessage');
+
+const serviceIdInput =
+    document.getElementById('service_id');
+
+const serviceInput =
+    document.getElementById('service');
+
+const durationInput =
+    document.getElementById('duration');
+
+const priceInput =
+    document.getElementById('price');
+
+const addonsInput =
+    document.getElementById('addons');
+
+const roomInput =
+    document.getElementById('room_type');
+
+const bookingDate =
+    document.getElementById('booking_date');
+
+const bookingTime =
+    document.getElementById('booking_time');
+
+const therapistInput =
+    document.getElementById('therapist');
+
+const paxInput =
+    document.getElementById('pax');
+
+
+/* =========================
+   PRICE VARIABLES
+========================= */
+
+let basePrice = 0;
+
+let addonTotal = 0;
+
+
+/* =========================
+   SUMMARY
+========================= */
+
 let summary = {
-    service: '-',
-    duration: '-',
-    room: '-',
-    time: '-',
-    therapist: '-'
+
+    service:'—',
+
+    duration:'—',
+
+    room:'—',
+
+    date:'—',
+
+    time:'—',
+
+    therapist:'—',
+
+    addons:'None'
+
 };
 
-function renderSummary() {
 
-    summaryBox.innerHTML = `
-        <h4>SUMMARY</h4>
-        Service: ${summary.service}<br>
-        Duration: ${summary.duration}<br>
-        Room: ${summary.room}<br>
-        Time: ${summary.time}<br>
-        Therapist: ${summary.therapist}
-    `;
+function money(value){
+
+    return '₱' +
+        Number(value || 0)
+        .toLocaleString(
+            'en-PH',
+            {
+                minimumFractionDigits:2,
+                maximumFractionDigits:2
+            }
+        );
 
 }
 
 
-/* CATEGORY */
+function renderSummary(){
 
-document.addEventListener('click', e => {
+    document.getElementById(
+        'sumService'
+    ).textContent =
+        summary.service;
 
-    let c = e.target.closest('.category');
+    document.getElementById(
+        'sumDuration'
+    ).textContent =
+        summary.duration;
 
-    if (!c) return;
+    document.getElementById(
+        'sumRoom'
+    ).textContent =
+        summary.room;
 
-    document.querySelectorAll('.category').forEach(x => {
-        x.classList.remove('active');
-    });
+    document.getElementById(
+        'sumDate'
+    ).textContent =
+        summary.date;
 
-    c.classList.add('active');
+    document.getElementById(
+        'sumTime'
+    ).textContent =
+        summary.time;
 
-    fetch('../get_services_by_category.php?cat=' + encodeURIComponent(c.dataset.cat))
-        .then(r => r.json())
-        .then(d => {
+    document.getElementById(
+        'sumTherapist'
+    ).textContent =
+        summary.therapist;
+
+    document.getElementById(
+        'sumAddons'
+    ).textContent =
+        summary.addons;
+
+
+    document.getElementById(
+        'sumBasePrice'
+    ).textContent =
+        money(basePrice);
+
+    document.getElementById(
+        'sumAddonPrice'
+    ).textContent =
+        money(addonTotal);
+
+
+    const total =
+        Number(basePrice) +
+        Number(addonTotal);
+
+
+    document.getElementById(
+        'sumTotal'
+    ).textContent =
+        money(total);
+
+
+    /*
+       SAVE TOTAL TO BOOKING PRICE
+    */
+
+    priceInput.value =
+        total.toFixed(2);
+
+}
+
+
+/* =========================
+   RESET AFTER CATEGORY
+========================= */
+
+function resetServiceSelection(){
+
+    serviceIdInput.value = '';
+
+    serviceInput.value = '';
+
+    durationInput.value = '';
+
+    basePrice = 0;
+
+    addonTotal = 0;
+
+    addonsInput.value = '';
+
+    summary.service = '—';
+
+    summary.duration = '—';
+
+    summary.addons = 'None';
+
+    serviceDesc.textContent =
+        'Select a service to view its description.';
+
+    durationBox.innerHTML =
+        '<div class="message" style="grid-column:1/-1;">Select a service first.</div>';
+
+    addonBox.innerHTML =
+        '<div class="message" style="grid-column:1/-1;">Add-ons will appear after selecting a service.</div>';
+
+    renderSummary();
+
+}
+
+
+/* =========================
+   CATEGORY
+========================= */
+
+document.addEventListener(
+    'click',
+    function(e){
+
+        const category =
+            e.target.closest('.category');
+
+        if(!category){
+            return;
+        }
+
+
+        document
+        .querySelectorAll('.category')
+        .forEach(card => {
+
+            card.classList.remove(
+                'active'
+            );
+
+        });
+
+
+        category.classList.add(
+            'active'
+        );
+
+
+        resetServiceSelection();
+
+
+        serviceBox.innerHTML =
+            '<div class="message" style="grid-column:1/-1;">Loading services...</div>';
+
+
+        fetch(
+            '../get_services_by_category.php?cat=' +
+            encodeURIComponent(
+                category.dataset.cat
+            )
+        )
+
+        .then(response =>
+            response.json()
+        )
+
+        .then(data => {
 
             serviceBox.innerHTML = '';
 
-            d.forEach(s => {
 
-                serviceBox.innerHTML += `
-                    <div
-                        class="card service"
-                        data-id="${s.id}"
-                        data-name="${s.service_name}"
-                        data-desc="${s.description || ''}"
-                    >
-                        ${s.service_name}
-                    </div>
-                `;
+            if(
+                !Array.isArray(data) ||
+                data.length === 0
+            ){
+
+                serviceBox.innerHTML =
+                    '<div class="message" style="grid-column:1/-1;">No services available in this category.</div>';
+
+                return;
+
+            }
+
+
+            data.forEach(s => {
+
+                const card =
+                    document.createElement(
+                        'div'
+                    );
+
+                card.className =
+                    'select-card service';
+
+                card.dataset.id =
+                    s.id;
+
+                card.dataset.name =
+                    s.service_name;
+
+                card.dataset.desc =
+                    s.description || '';
+
+                card.textContent =
+                    s.service_name;
+
+
+                serviceBox.appendChild(
+                    card
+                );
 
             });
 
         })
+
         .catch(error => {
-            console.error('Service error:', error);
+
+            console.error(
+                'Service error:',
+                error
+            );
+
+            serviceBox.innerHTML =
+                '<div class="message" style="grid-column:1/-1;">Unable to load services.</div>';
+
         });
 
-});
+    }
+);
 
 
-/* SERVICE */
+/* =========================
+   SERVICE
+========================= */
 
-document.addEventListener('click', e => {
+document.addEventListener(
+    'click',
+    function(e){
 
-    let s = e.target.closest('.service');
+        const selectedService =
+            e.target.closest('.service');
 
-    if (!s) return;
-
-    service_id.value = s.dataset.id;
-    service.value = s.dataset.name;
-
-    serviceDesc.innerText =
-        s.dataset.desc || "No description available";
-
-    summary.service = s.dataset.name;
-    renderSummary();
+        if(!selectedService){
+            return;
+        }
 
 
-    /* DURATION */
+        document
+        .querySelectorAll('.service')
+        .forEach(card => {
 
-    fetch('../get_duration.php?id=' + encodeURIComponent(s.dataset.id))
-        .then(r => r.json())
-        .then(d => {
+            card.classList.remove(
+                'active'
+            );
+
+        });
+
+
+        selectedService.classList.add(
+            'active'
+        );
+
+
+        serviceIdInput.value =
+            selectedService.dataset.id;
+
+        serviceInput.value =
+            selectedService.dataset.name;
+
+
+        serviceDesc.textContent =
+            selectedService.dataset.desc ||
+            'No description available.';
+
+
+        summary.service =
+            selectedService.dataset.name;
+
+        summary.duration = '—';
+
+        summary.addons = 'None';
+
+        durationInput.value = '';
+
+        addonsInput.value = '';
+
+        basePrice = 0;
+
+        addonTotal = 0;
+
+        renderSummary();
+
+
+        /* =====================
+           LOAD DURATION
+        ====================== */
+
+        durationBox.innerHTML =
+            '<div class="message" style="grid-column:1/-1;">Loading durations...</div>';
+
+
+        fetch(
+            '../get_duration.php?id=' +
+            encodeURIComponent(
+                selectedService.dataset.id
+            )
+        )
+
+        .then(response =>
+            response.json()
+        )
+
+        .then(data => {
 
             durationBox.innerHTML = '';
 
-            d.forEach(x => {
 
-                durationBox.innerHTML += `
-                    <div
-                        class="card duration"
-                        data-d="${x.duration}"
-                        data-p="${x.price}"
-                    >
-                        ${x.duration}<br>
-                        ₱${x.price}
-                    </div>
+            if(
+                !Array.isArray(data) ||
+                data.length === 0
+            ){
+
+                durationBox.innerHTML =
+                    '<div class="message" style="grid-column:1/-1;">No duration available.</div>';
+
+                return;
+
+            }
+
+
+            data.forEach(item => {
+
+                const card =
+                    document.createElement(
+                        'div'
+                    );
+
+                card.className =
+                    'select-card duration';
+
+                card.dataset.duration =
+                    item.duration;
+
+                card.dataset.price =
+                    item.price;
+
+
+                card.innerHTML = `
+                    <span>
+                        ${item.duration}
+                    </span>
+
+                    <span class="card-price">
+                        ${money(item.price)}
+                    </span>
                 `;
 
+
+                durationBox.appendChild(
+                    card
+                );
+
             });
+
+        })
+
+        .catch(error => {
+
+            console.error(
+                'Duration error:',
+                error
+            );
+
+            durationBox.innerHTML =
+                '<div class="message" style="grid-column:1/-1;">Unable to load durations.</div>';
 
         });
 
 
-    /* ADDONS */
+        /* =====================
+           LOAD ADDONS
+        ====================== */
 
-    fetch('../get_addons.php')
-        .then(r => r.json())
-        .then(d => {
+        addonBox.innerHTML =
+            '<div class="message" style="grid-column:1/-1;">Loading add-ons...</div>';
+
+
+        fetch('../get_addons.php')
+
+        .then(response =>
+            response.json()
+        )
+
+        .then(data => {
 
             addonBox.innerHTML = '';
 
-            d.forEach(a => {
 
-                addonBox.innerHTML += `
-                    <div
-                        class="card addon"
-                        data-name="${a.service_name}"
-                        data-price="${a.price}"
-                    >
-                        ${a.service_name}<br>
-                        ₱${a.price}
+            if(
+                !Array.isArray(data) ||
+                data.length === 0
+            ){
 
-                        <div class="desc">
-                            ${a.description || ''}
-                        </div>
-                    </div>
+                addonBox.innerHTML =
+                    '<div class="message" style="grid-column:1/-1;">No add-ons available.</div>';
+
+                return;
+
+            }
+
+
+            data.forEach(addon => {
+
+                const card =
+                    document.createElement(
+                        'div'
+                    );
+
+                card.className =
+                    'select-card addon';
+
+                card.dataset.name =
+                    addon.service_name;
+
+                card.dataset.price =
+                    addon.price;
+
+
+                card.innerHTML = `
+                    <span>
+                        ${addon.service_name}
+                    </span>
+
+                    <span class="card-price">
+                        ${money(addon.price)}
+                    </span>
+
+                    ${
+                        addon.description
+                        ?
+                        `<span class="card-desc">
+                            ${addon.description}
+                        </span>`
+                        :
+                        ''
+                    }
                 `;
+
+
+                addonBox.appendChild(
+                    card
+                );
 
             });
 
+        })
+
+        .catch(error => {
+
+            console.error(
+                'Addon error:',
+                error
+            );
+
+            addonBox.innerHTML =
+                '<div class="message" style="grid-column:1/-1;">Unable to load add-ons.</div>';
+
         });
 
-});
+    }
+);
 
 
-/* DURATION */
+/* =========================
+   DURATION
+========================= */
 
-document.addEventListener('click', e => {
+document.addEventListener(
+    'click',
+    function(e){
 
-    let d = e.target.closest('.duration');
+        const selectedDuration =
+            e.target.closest('.duration');
 
-    if (!d) return;
-
-    document.querySelectorAll('.duration').forEach(x => {
-        x.classList.remove('active');
-    });
-
-    d.classList.add('active');
-
-    duration.value = d.dataset.d;
-    price.value = d.dataset.p;
-
-    summary.duration = d.dataset.d;
-    renderSummary();
-
-});
+        if(!selectedDuration){
+            return;
+        }
 
 
-/* ADDONS */
+        document
+        .querySelectorAll('.duration')
+        .forEach(card => {
 
-document.addEventListener('click', e => {
+            card.classList.remove(
+                'active'
+            );
 
-    let a = e.target.closest('.addon');
-
-    if (!a) return;
-
-    a.classList.toggle('active');
-
-    let arr = [];
-
-    document.querySelectorAll('.addon.active').forEach(x => {
-        arr.push(x.dataset.name);
-    });
-
-    addons.value = arr.join(', ');
-
-});
+        });
 
 
-/* ROOM */
+        selectedDuration.classList.add(
+            'active'
+        );
 
-document.addEventListener('click', e => {
 
-    let r = e.target.closest('.room');
+        durationInput.value =
+            selectedDuration.dataset.duration;
 
-    if (!r) return;
 
-    document.querySelectorAll('.room').forEach(x => {
-        x.classList.remove('active');
-    });
+        basePrice =
+            parseFloat(
+                selectedDuration.dataset.price
+            ) || 0;
 
-    r.classList.add('active');
 
-    room_type.value = r.dataset.room;
+        summary.duration =
+            selectedDuration.dataset.duration;
 
-    summary.room = r.dataset.room;
-    renderSummary();
 
-    let paxInput = document.querySelector('[name="pax"]');
+        renderSummary();
 
-    if (r.dataset.room === "Couple Room") {
 
-        paxInput.value = 2;
-        paxInput.readOnly = true;
+        /*
+           Reload therapists because
+           duration affects availability.
+        */
 
-    } else {
+        if(
+            bookingDate.value &&
+            bookingTime.value
+        ){
 
-        paxInput.value = 1;
-        paxInput.readOnly = false;
+            loadTherapists(
+                bookingDate.value,
+                bookingTime.value
+            );
+
+        }
 
     }
+);
 
-});
+
+/* =========================
+   ADD-ONS
+========================= */
+
+document.addEventListener(
+    'click',
+    function(e){
+
+        const selectedAddon =
+            e.target.closest('.addon');
+
+        if(!selectedAddon){
+            return;
+        }
 
 
-/* RESET THERAPIST DISPLAY */
+        selectedAddon.classList.toggle(
+            'active'
+        );
 
-function resetTherapistDisplay() {
+
+        let names = [];
+
+        addonTotal = 0;
+
+
+        document
+        .querySelectorAll(
+            '.addon.active'
+        )
+        .forEach(card => {
+
+            names.push(
+                card.dataset.name
+            );
+
+            addonTotal +=
+                parseFloat(
+                    card.dataset.price
+                ) || 0;
+
+        });
+
+
+        addonsInput.value =
+            names.join(', ');
+
+
+        summary.addons =
+            names.length
+            ? names.join(', ')
+            : 'None';
+
+
+        renderSummary();
+
+    }
+);
+
+
+/* =========================
+   ROOM
+========================= */
+
+document.addEventListener(
+    'click',
+    function(e){
+
+        const room =
+            e.target.closest('.room');
+
+        if(!room){
+            return;
+        }
+
+
+        document
+        .querySelectorAll('.room')
+        .forEach(card => {
+
+            card.classList.remove(
+                'active'
+            );
+
+        });
+
+
+        room.classList.add(
+            'active'
+        );
+
+
+        roomInput.value =
+            room.dataset.room;
+
+
+        summary.room =
+            room.dataset.room;
+
+
+        if(
+            room.dataset.room ===
+            'Couple Room'
+        ){
+
+            paxInput.value = 2;
+
+            paxInput.readOnly = true;
+
+        }else{
+
+            paxInput.value = 1;
+
+            paxInput.readOnly = false;
+
+        }
+
+
+        renderSummary();
+
+    }
+);
+
+
+/* =========================
+   MINIMUM DATE
+========================= */
+
+const today =
+    new Date();
+
+const year =
+    today.getFullYear();
+
+const month =
+    String(
+        today.getMonth() + 1
+    ).padStart(2,'0');
+
+const day =
+    String(
+        today.getDate()
+    ).padStart(2,'0');
+
+bookingDate.min =
+    `${year}-${month}-${day}`;
+
+
+/* =========================
+   RESET THERAPIST
+========================= */
+
+function resetTherapistDisplay(){
 
     therapistBox.innerHTML = '';
 
-    therapistMessage.innerText =
+    therapistMessage.textContent =
         'Select a time to view available therapists.';
 
-    therapist.value = '';
+    therapistInput.value = '';
 
-    summary.therapist = '-';
+    summary.therapist = '—';
 
     renderSummary();
 
 }
 
 
-/* LOAD THERAPISTS */
+/* =========================
+   LOAD THERAPISTS
+========================= */
 
-function loadTherapists(selectedDate, selectedTime) {
+function loadTherapists(
+    selectedDate,
+    selectedTime
+){
 
     therapistBox.innerHTML = '';
 
-    therapistMessage.innerText =
+    therapistMessage.textContent =
         'Loading therapists...';
 
-    therapist.value = '';
+    therapistInput.value = '';
 
-    summary.therapist = '-';
+    summary.therapist = '—';
+
     renderSummary();
 
-    let selectedDuration = duration.value || '1 Hour';
+
+    let selectedDuration =
+        durationInput.value ||
+        '1 Hour';
+
 
     fetch(
         'get_available_therapists.php?date=' +
-        encodeURIComponent(selectedDate) +
+        encodeURIComponent(
+            selectedDate
+        ) +
         '&time=' +
-        encodeURIComponent(selectedTime) +
+        encodeURIComponent(
+            selectedTime
+        ) +
         '&duration=' +
-        encodeURIComponent(selectedDuration)
+        encodeURIComponent(
+            selectedDuration
+        )
     )
-    .then(r => r.json())
+
+    .then(response =>
+        response.json()
+    )
+
     .then(data => {
 
         therapistBox.innerHTML = '';
 
-        if (!Array.isArray(data) || data.length === 0) {
 
-            therapistMessage.innerText =
+        if(
+            !Array.isArray(data) ||
+            data.length === 0
+        ){
+
+            therapistMessage.textContent =
                 'No therapists found.';
 
             return;
 
         }
 
-        therapistMessage.innerText =
+
+        therapistMessage.textContent =
             'Choose an available therapist.';
+
 
         data.forEach(t => {
 
-            let therapistName = t.name ?? t;
-            let therapistId = t.id ?? '';
+            let therapistName =
+                t.name ?? t;
+
+            let therapistId =
+                t.id ?? '';
+
             let isAvailable =
-                t.available === undefined ? true : Boolean(t.available);
+                t.available === undefined
+                ? true
+                : Boolean(t.available);
 
-            let card = document.createElement('div');
 
-            card.className = 'card therapist';
+            const card =
+                document.createElement(
+                    'div'
+                );
 
-            card.dataset.id = therapistId;
-            card.dataset.name = therapistName;
+
+            card.className =
+                'select-card therapist';
+
+
+            card.dataset.id =
+                therapistId;
+
+            card.dataset.name =
+                therapistName;
+
 
             card.innerHTML = `
-                <strong>${therapistName}</strong>
-                <div class="desc ${
+
+                <strong>
+                    ${therapistName}
+                </strong>
+
+                <div class="card-desc ${
                     isAvailable
-                        ? 'available-text'
-                        : 'unavailable-text'
+                    ? 'available-text'
+                    : 'unavailable-text'
                 }">
+
                     ${
                         isAvailable
-                            ? 'Available'
-                            : 'Booked / Unavailable'
+                        ? 'Available'
+                        : 'Booked / Unavailable'
                     }
+
                 </div>
+
             `;
 
-            if (!isAvailable) {
 
-                card.classList.add('unavailable');
-                card.style.pointerEvents = 'none';
+            if(!isAvailable){
 
-            } else {
+                card.classList.add(
+                    'unavailable'
+                );
 
-                card.onclick = () => {
+                card.style.pointerEvents =
+                    'none';
 
-                    document.querySelectorAll('.therapist')
-                        .forEach(x => x.classList.remove('active'));
+            }else{
 
-                    card.classList.add('active');
+                card.onclick =
+                    function(){
 
-                    /*
-                       Save therapist ID to therapist_id column.
-                    */
+                        document
+                        .querySelectorAll(
+                            '.therapist'
+                        )
+                        .forEach(item => {
 
-                    therapist.value = therapistId;
+                            item.classList.remove(
+                                'active'
+                            );
 
-                    summary.therapist = therapistName;
+                        });
 
-                    renderSummary();
 
-                };
+                        card.classList.add(
+                            'active'
+                        );
+
+
+                        therapistInput.value =
+                            therapistId;
+
+
+                        summary.therapist =
+                            therapistName;
+
+
+                        renderSummary();
+
+                    };
 
             }
 
-            therapistBox.appendChild(card);
+
+            therapistBox.appendChild(
+                card
+            );
 
         });
 
     })
+
     .catch(error => {
 
-        console.error('Therapist error:', error);
+        console.error(
+            'Therapist error:',
+            error
+        );
+
 
         therapistBox.innerHTML = '';
 
-        therapistMessage.innerText =
+
+        therapistMessage.textContent =
             'Unable to load therapists.';
 
     });
@@ -910,129 +3137,330 @@ function loadTherapists(selectedDate, selectedTime) {
 }
 
 
-/* DATE + TIME */
+/* =========================
+   DATE CHANGE
+========================= */
 
-booking_date.onchange = async () => {
+bookingDate.addEventListener(
+    'change',
+    async function(){
 
-    timeBox.innerHTML = '';
+        timeBox.innerHTML = '';
 
-    resetTherapistDisplay();
+        bookingTime.value = '';
 
-    let selectedDate = booking_date.value;
+        resetTherapistDisplay();
 
-    if (!selectedDate) return;
 
-    for (let h = 10; h <= 22; h++) {
+        const selectedDate =
+            bookingDate.value;
 
-        let timeValue = h + ':00';
 
-        let res = await fetch(
-            '../check_slot.php?date=' +
-            encodeURIComponent(selectedDate) +
-            '&time=' +
-            encodeURIComponent(timeValue)
-        );
+        if(!selectedDate){
+            return;
+        }
 
-        let data = await res.json();
 
-        let div = document.createElement('div');
+        /*
+           DISPLAY DATE IN SUMMARY
+        */
 
-        div.className = 'time-card';
+        const dateObject =
+            new Date(
+                selectedDate +
+                'T00:00:00'
+            );
 
-        div.innerHTML =
-            (h % 12 || 12) +
-            ':00 ' +
-            (h >= 12 ? 'PM' : 'AM') +
-            `<div class="small">${data.remaining} slot</div>`;
 
-        if (!data.available) {
+        summary.date =
+            dateObject.toLocaleDateString(
+                'en-US',
+                {
+                    month:'short',
+                    day:'numeric',
+                    year:'numeric'
+                }
+            );
 
-            div.classList.add('dim');
 
-        } else {
+        summary.time = '—';
 
-            div.onclick = () => {
+        renderSummary();
 
-                document.querySelectorAll('.time-card').forEach(x => {
-                    x.classList.remove('active');
-                });
 
-                div.classList.add('active');
+        timeBox.innerHTML =
+            '<div class="message" style="grid-column:1/-1;">Checking available time slots...</div>';
 
-                booking_time.value = timeValue;
 
-                summary.time = timeValue;
-                summary.therapist = '-';
+        let cards = [];
 
-                renderSummary();
 
-                loadTherapists(
-                    selectedDate,
-                    timeValue
+        /*
+           Existing booking logic:
+           10 AM to 10 PM
+        */
+
+        for(
+            let hour = 10;
+            hour <= 22;
+            hour++
+        ){
+
+            const timeValue =
+                String(hour)
+                .padStart(2,'0') +
+                ':00';
+
+
+            try{
+
+                const response =
+                    await fetch(
+                        '../check_slot.php?date=' +
+                        encodeURIComponent(
+                            selectedDate
+                        ) +
+                        '&time=' +
+                        encodeURIComponent(
+                            timeValue
+                        )
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                const div =
+                    document.createElement(
+                        'div'
+                    );
+
+
+                div.className =
+                    'time-card';
+
+
+                const displayHour =
+                    hour % 12 || 12;
+
+
+                const meridiem =
+                    hour >= 12
+                    ? 'PM'
+                    : 'AM';
+
+
+                div.innerHTML = `
+
+                    ${displayHour}:00 ${meridiem}
+
+                    <span class="slot-count">
+                        ${
+                            data.remaining ?? 0
+                        } slot${
+                            Number(
+                                data.remaining
+                            ) === 1
+                            ? ''
+                            : 's'
+                        }
+                    </span>
+
+                `;
+
+
+                if(!data.available){
+
+                    div.classList.add(
+                        'dim'
+                    );
+
+                }else{
+
+                    div.onclick =
+                        function(){
+
+                            document
+                            .querySelectorAll(
+                                '.time-card'
+                            )
+                            .forEach(card => {
+
+                                card.classList.remove(
+                                    'active'
+                                );
+
+                            });
+
+
+                            div.classList.add(
+                                'active'
+                            );
+
+
+                            bookingTime.value =
+                                timeValue;
+
+
+                            summary.time =
+                                `${displayHour}:00 ${meridiem}`;
+
+                            summary.therapist =
+                                '—';
+
+
+                            renderSummary();
+
+
+                            loadTherapists(
+                                selectedDate,
+                                timeValue
+                            );
+
+                        };
+
+                }
+
+
+                cards.push(div);
+
+
+            }catch(error){
+
+                console.error(
+                    'Slot error:',
+                    error
                 );
 
-            };
+            }
 
         }
 
-        timeBox.appendChild(div);
+
+        timeBox.innerHTML = '';
+
+
+        if(cards.length === 0){
+
+            timeBox.innerHTML =
+                '<div class="message" style="grid-column:1/-1;">Unable to load available time slots.</div>';
+
+            return;
+
+        }
+
+
+        cards.forEach(card => {
+
+            timeBox.appendChild(
+                card
+            );
+
+        });
 
     }
+);
 
-};
+
+/* =========================
+   VALIDATION
+========================= */
+
+document
+.getElementById(
+    'bookingForm'
+)
+.addEventListener(
+    'submit',
+    function(e){
+
+        if(
+            !serviceIdInput.value
+        ){
+
+            alert(
+                'Please select a service first.'
+            );
+
+            e.preventDefault();
+
+            return;
+
+        }
 
 
-/* CLEAR THERAPIST WHEN DURATION CHANGES */
+        if(
+            !durationInput.value
+        ){
 
-document.addEventListener('click', e => {
+            alert(
+                'Please select a duration first.'
+            );
 
-    let d = e.target.closest('.duration');
+            e.preventDefault();
 
-    if (!d) return;
+            return;
 
-    if (booking_date.value && booking_time.value) {
+        }
 
-        loadTherapists(
-            booking_date.value,
-            booking_time.value
-        );
+
+        if(
+            !roomInput.value
+        ){
+
+            alert(
+                'Please select a room first.'
+            );
+
+            e.preventDefault();
+
+            return;
+
+        }
+
+
+        if(
+            !bookingDate.value ||
+            !bookingTime.value
+        ){
+
+            alert(
+                'Please select your appointment date and time.'
+            );
+
+            e.preventDefault();
+
+            return;
+
+        }
+
+
+        if(
+            !priceInput.value ||
+            Number(priceInput.value) <= 0
+        ){
+
+            alert(
+                'Unable to calculate booking price. Please select your service duration again.'
+            );
+
+            e.preventDefault();
+
+            return;
+
+        }
 
     }
+);
 
-});
 
+/* INITIAL SUMMARY */
 
-/* PREVENT SUBMIT WITHOUT REQUIRED SELECTIONS */
-
-document.getElementById('bookingForm').addEventListener('submit', e => {
-
-    if (!service_id.value) {
-        alert('Please select a service first.');
-        e.preventDefault();
-        return;
-    }
-
-    if (!duration.value) {
-        alert('Please select a duration first.');
-        e.preventDefault();
-        return;
-    }
-
-    if (!room_type.value) {
-        alert('Please select a room first.');
-        e.preventDefault();
-        return;
-    }
-
-    if (!booking_date.value || !booking_time.value) {
-        alert('Please select date and time first.');
-        e.preventDefault();
-        return;
-    }
-
-});
+renderSummary();
 
 </script>
 
 </body>
+
 </html>
